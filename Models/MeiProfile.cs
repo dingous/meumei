@@ -16,7 +16,7 @@ public sealed class MeiProfile
     [MaxLength(30)]
     public string Cnpj { get; set; } = string.Empty;
 
-    public DateTime OpenedAt { get; set; } = new(DateTime.Today.Year, 1, 1);
+    public DateTime OpenedAt { get; set; } = DateTime.Today;
 
     public decimal AnnualRevenueLimit { get; set; } = 81_000m;
 }

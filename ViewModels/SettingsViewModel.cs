@@ -28,16 +28,21 @@ public partial class SettingsViewModel(
     [RelayCommand]
     private async Task LoadAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+            return;
+
         IsBusy = true;
         ErrorMessage = string.Empty;
+
         try
         {
             Profile = await database.GetProfileAsync();
+
             var status = trial.GetStatus();
             TrialText = status.IsActive
                 ? $"Grátis até {status.ExpiresAtUtc.ToLocalTime():dd/MM/yyyy} • {status.DaysRemaining} dias restantes"
                 : "Período gratuito encerrado";
+
             IsGoogleLoginAvailable = googleAuth.IsSupported;
             await RefreshSessionAsync();
         }
@@ -54,7 +59,8 @@ public partial class SettingsViewModel(
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+            return;
 
         Message = string.Empty;
         ErrorMessage = string.Empty;
@@ -101,7 +107,8 @@ public partial class SettingsViewModel(
     [RelayCommand]
     private async Task SignInWithGoogleAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+            return;
 
         ErrorMessage = string.Empty;
         Message = string.Empty;
@@ -113,9 +120,11 @@ public partial class SettingsViewModel(
             var session = await dingousAuth.ExchangeGoogleTokenAsync(google.IdToken);
             await authSession.SaveAsync(session);
             await RefreshSessionAsync();
+
             Message = "Conta Google conectada ao Dingous com sucesso.";
 
-            if (string.IsNullOrWhiteSpace(Profile.OwnerName) && !string.IsNullOrWhiteSpace(session.Name))
+            if (string.IsNullOrWhiteSpace(Profile.OwnerName) &&
+                !string.IsNullOrWhiteSpace(session.Name))
             {
                 Profile.OwnerName = session.Name;
                 try
@@ -145,15 +154,33 @@ public partial class SettingsViewModel(
     [RelayCommand]
     private async Task SignOutAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+            return;
 
         IsBusy = true;
+        Message = string.Empty;
+        ErrorMessage = string.Empty;
+
+        var nativeStateCleared = true;
+
         try
         {
             authSession.Clear();
+
+            try
+            {
+                await googleAuth.SignOutAsync();
+            }
+            catch
+            {
+                nativeStateCleared = false;
+            }
+
             await RefreshSessionAsync();
-            Message = "Você saiu da conta Dingous neste aparelho.";
-            ErrorMessage = string.Empty;
+
+            Message = nativeStateCleared
+                ? "Você saiu da conta Dingous neste aparelho."
+                : "Sessão Dingous encerrada. O Google pode manter a conta anterior sugerida no próximo login.";
         }
         finally
         {
@@ -164,6 +191,7 @@ public partial class SettingsViewModel(
     private async Task RefreshSessionAsync()
     {
         var session = await authSession.GetAsync();
+
         IsLoggedIn = session is not null;
         AccountName = session?.Name ?? string.Empty;
         AccountEmail = session?.Email ?? string.Empty;
@@ -180,22 +208,35 @@ public partial class SettingsViewModel(
 
         if (raw.Contains("503", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains("não foi configurado", StringComparison.OrdinalIgnoreCase))
+        {
             return "O login Google ainda não está habilitado no DingousChatTrade de produção.";
+        }
 
         if (raw.Contains("network", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains("internet", StringComparison.OrdinalIgnoreCase) ||
             raw.Contains("conectar", StringComparison.OrdinalIgnoreCase))
+        {
             return "Sem conexão com o DingousChatTrade. Verifique sua internet.";
+        }
 
-        return raw.Length <= 180 ? raw : "Não foi possível concluir o login Google agora.";
+        return raw.Length <= 180
+            ? raw
+            : "Não foi possível concluir o login Google agora.";
     }
 
     private static string Initials(string? name, string? email)
     {
-        var source = string.IsNullOrWhiteSpace(name) ? email ?? string.Empty : name;
-        var parts = source.Split(new[] { ' ', '@', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        var source = string.IsNullOrWhiteSpace(name)
+            ? email ?? string.Empty
+            : name;
+
+        var parts = source.Split(
+            new[] { ' ', '@', '.', '_', '-' },
+            StringSplitOptions.RemoveEmptyEntries);
+
         if (parts.Length == 0)
             return "ME";
+
         if (parts.Length == 1)
             return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
 

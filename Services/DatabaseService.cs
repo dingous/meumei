@@ -15,14 +15,20 @@ public sealed class DatabaseService
             return _database;
 
         await _initializeLock.WaitAsync();
+
         try
         {
             if (_database is null)
             {
-                var path = Path.Combine(FileSystem.AppDataDirectory, "meiutil.db3");
+                var path = Path.Combine(
+                    FileSystem.AppDataDirectory,
+                    "meiutil.db3");
+
                 _database = new SQLiteAsyncConnection(
                     path,
-                    SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache);
+                    SQLiteOpenFlags.ReadWrite |
+                    SQLiteOpenFlags.Create |
+                    SQLiteOpenFlags.SharedCache);
             }
 
             if (!_initialized)
@@ -32,6 +38,7 @@ public sealed class DatabaseService
                 await _database.CreateTableAsync<Quote>();
                 await _database.CreateTableAsync<ObligationRecord>();
                 await _database.CreateTableAsync<MeiProfile>();
+
                 _initialized = true;
             }
 
@@ -44,18 +51,38 @@ public sealed class DatabaseService
     }
 
     public async Task<List<Transaction>> GetTransactionsAsync()
-        => await (await GetDatabaseAsync()).Table<Transaction>().OrderByDescending(x => x.Date).ToListAsync();
+    {
+        var db = await GetDatabaseAsync();
+        var items = await db.Table<Transaction>().ToListAsync();
 
-    public async Task<List<Transaction>> GetTransactionsAsync(DateTime start, DateTime end)
-        => await (await GetDatabaseAsync()).Table<Transaction>()
-            .Where(x => x.Date >= start && x.Date < end)
+        return items
             .OrderByDescending(x => x.Date)
+            .ThenByDescending(x => x.Id)
+            .ToList();
+    }
+
+    public async Task<List<Transaction>> GetTransactionsAsync(
+        DateTime start,
+        DateTime end)
+    {
+        var db = await GetDatabaseAsync();
+
+        var items = await db.Table<Transaction>()
+            .Where(x => x.Date >= start && x.Date < end)
             .ToListAsync();
+
+        return items
+            .OrderByDescending(x => x.Date)
+            .ThenByDescending(x => x.Id)
+            .ToList();
+    }
 
     public async Task SaveTransactionAsync(Transaction item)
     {
         ArgumentNullException.ThrowIfNull(item);
+
         var db = await GetDatabaseAsync();
+
         if (item.Id == 0)
             await db.InsertAsync(item);
         else
@@ -69,12 +96,22 @@ public sealed class DatabaseService
     }
 
     public async Task<List<Client>> GetClientsAsync()
-        => await (await GetDatabaseAsync()).Table<Client>().OrderBy(x => x.Name).ToListAsync();
+    {
+        var db = await GetDatabaseAsync();
+        var items = await db.Table<Client>().ToListAsync();
+
+        return items
+            .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(x => x.Id)
+            .ToList();
+    }
 
     public async Task SaveClientAsync(Client item)
     {
         ArgumentNullException.ThrowIfNull(item);
+
         var db = await GetDatabaseAsync();
+
         if (item.Id == 0)
             await db.InsertAsync(item);
         else
@@ -82,12 +119,22 @@ public sealed class DatabaseService
     }
 
     public async Task<List<Quote>> GetQuotesAsync()
-        => await (await GetDatabaseAsync()).Table<Quote>().OrderByDescending(x => x.CreatedAt).ToListAsync();
+    {
+        var db = await GetDatabaseAsync();
+        var items = await db.Table<Quote>().ToListAsync();
+
+        return items
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .ToList();
+    }
 
     public async Task SaveQuoteAsync(Quote item)
     {
         ArgumentNullException.ThrowIfNull(item);
+
         var db = await GetDatabaseAsync();
+
         if (item.Id == 0)
             await db.InsertAsync(item);
         else
@@ -95,12 +142,22 @@ public sealed class DatabaseService
     }
 
     public async Task<List<ObligationRecord>> GetObligationsAsync()
-        => await (await GetDatabaseAsync()).Table<ObligationRecord>().OrderBy(x => x.DueDate).ToListAsync();
+    {
+        var db = await GetDatabaseAsync();
+        var items = await db.Table<ObligationRecord>().ToListAsync();
+
+        return items
+            .OrderBy(x => x.DueDate)
+            .ThenBy(x => x.Id)
+            .ToList();
+    }
 
     public async Task SaveObligationAsync(ObligationRecord item)
     {
         ArgumentNullException.ThrowIfNull(item);
+
         var db = await GetDatabaseAsync();
+
         if (item.Id == 0)
             await db.InsertAsync(item);
         else
@@ -111,18 +168,23 @@ public sealed class DatabaseService
     {
         var db = await GetDatabaseAsync();
         var profile = await db.FindAsync<MeiProfile>(1);
+
         if (profile is not null)
             return profile;
 
         profile = new MeiProfile();
         await db.InsertAsync(profile);
+
         return profile;
     }
 
     public async Task SaveProfileAsync(MeiProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
+
         profile.Id = 1;
-        await (await GetDatabaseAsync()).InsertOrReplaceAsync(profile);
+
+        await (await GetDatabaseAsync())
+            .InsertOrReplaceAsync(profile);
     }
 }

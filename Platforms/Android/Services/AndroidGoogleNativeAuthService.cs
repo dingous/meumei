@@ -19,30 +19,51 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
 
     public bool IsSupported => true;
 
-    public Task<GoogleNativeCredential> SignInAsync(CancellationToken cancellationToken = default)
+    public Task<GoogleNativeCredential> SignInAsync(
+        CancellationToken cancellationToken = default)
     {
         TaskCompletionSource<GoogleNativeCredential> pending;
+
         lock (_gate)
         {
             if (_pending is not null)
-                throw new InvalidOperationException("Já existe uma tentativa de login em andamento.");
+                throw new InvalidOperationException(
+                    "Já existe uma tentativa de login em andamento.");
 
-            pending = new TaskCompletionSource<GoogleNativeCredential>(TaskCreationOptions.RunContinuationsAsynchronously);
+            pending = new TaskCompletionSource<GoogleNativeCredential>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
             _pending = pending;
+
             if (cancellationToken.CanBeCanceled)
-                _cancellationRegistration = cancellationToken.Register(() => CompleteCanceled(cancellationToken));
+            {
+                _cancellationRegistration = cancellationToken.Register(
+                    () => CompleteCanceled(cancellationToken));
+            }
         }
 
         try
         {
             var option = new GetSignInWithGoogleOption.Builder(ServerClientId).Build();
-            var request = new GetCredentialRequest.Builder().AddCredentialOption(option).Build();
-            var looper = Looper.MainLooper ?? throw new InvalidOperationException("Looper principal do Android indisponível.");
+            var request = new GetCredentialRequest.Builder()
+                .AddCredentialOption(option)
+                .Build();
+
+            var looper = Looper.MainLooper
+                ?? throw new InvalidOperationException(
+                    "Looper principal do Android indisponível.");
+
             var context = Platform.CurrentActivity ?? Platform.AppContext
-                ?? throw new InvalidOperationException("Contexto Android indisponível para abrir o login Google.");
+                ?? throw new InvalidOperationException(
+                    "Contexto Android indisponível para abrir o login Google.");
 
             CredentialManager.Create(context)
-                .GetCredentialAsync(context, request, null, new HandlerExecutor(looper), this);
+                .GetCredentialAsync(
+                    context,
+                    request,
+                    null,
+                    new HandlerExecutor(looper),
+                    this);
         }
         catch (System.Exception ex)
         {
@@ -52,21 +73,58 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
         return pending.Task;
     }
 
+    public async Task SignOutAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var looper = Looper.MainLooper
+            ?? throw new InvalidOperationException(
+                "Looper principal do Android indisponível.");
+
+        var context = Platform.CurrentActivity ?? Platform.AppContext
+            ?? throw new InvalidOperationException(
+                "Contexto Android indisponível para encerrar a sessão Google.");
+
+        var callback = new ClearCredentialCallback();
+
+        using var registration = cancellationToken.CanBeCanceled
+            ? cancellationToken.Register(() => callback.Cancel(cancellationToken))
+            : default;
+
+        CredentialManager.Create(context)
+            .ClearCredentialStateAsync(
+                new ClearCredentialStateRequest(),
+                null,
+                new HandlerExecutor(looper),
+                callback);
+
+        await callback.Completion;
+    }
+
     public void OnResult(JObject? result)
     {
         try
         {
-            if (result is null || !result.TryJavaCast(out GetCredentialResponse? response) || response is null)
-                throw new InvalidOperationException("O Google retornou uma credencial desconhecida.");
+            if (result is null ||
+                !result.TryJavaCast(out GetCredentialResponse? response) ||
+                response is null)
+            {
+                throw new InvalidOperationException(
+                    "O Google retornou uma credencial desconhecida.");
+            }
 
             var google = GoogleIdTokenCredential.CreateFrom(response.Credential.Data);
-            if (string.IsNullOrWhiteSpace(google.IdToken))
-                throw new InvalidOperationException("O Google não retornou um ID Token válido.");
 
-            CompleteSuccess(new GoogleNativeCredential(
-                google.IdToken,
-                google.Id ?? string.Empty,
-                google.DisplayName ?? string.Empty));
+            if (string.IsNullOrWhiteSpace(google.IdToken))
+            {
+                throw new InvalidOperationException(
+                    "O Google não retornou um ID Token válido.");
+            }
+
+            CompleteSuccess(
+                new GoogleNativeCredential(
+                    google.IdToken,
+                    google.Id ?? string.Empty,
+                    google.DisplayName ?? string.Empty));
         }
         catch (System.Exception ex)
         {
@@ -78,7 +136,8 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
     {
         try
         {
-            if (error.TryJavaCast(out GetCredentialException? exception) && exception is not null)
+            if (error.TryJavaCast(out GetCredentialException? exception) &&
+                exception is not null)
             {
                 switch (exception)
                 {
@@ -86,19 +145,31 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
                     case GetCredentialInterruptedException:
                         CompleteCanceled(CancellationToken.None);
                         return;
+
                     case NoCredentialException:
-                        CompleteException(new InvalidOperationException("Nenhuma conta Google disponível neste aparelho."));
+                        CompleteException(
+                            new InvalidOperationException(
+                                "Nenhuma conta Google disponível neste aparelho."));
                         return;
+
                     case GetCredentialProviderConfigurationException:
-                        CompleteException(new InvalidOperationException("O login Google deste aplicativo ainda não está configurado corretamente."));
+                        CompleteException(
+                            new InvalidOperationException(
+                                "O login Google deste aplicativo ainda não está configurado corretamente."));
                         return;
+
                     default:
-                        CompleteException(new InvalidOperationException("Não foi possível concluir o login Google.", exception));
+                        CompleteException(
+                            new InvalidOperationException(
+                                "Não foi possível concluir o login Google.",
+                                exception));
                         return;
                 }
             }
 
-            CompleteException(new InvalidOperationException("Não foi possível concluir o login Google."));
+            CompleteException(
+                new InvalidOperationException(
+                    "Não foi possível concluir o login Google."));
         }
         catch (System.Exception ex)
         {
@@ -109,6 +180,7 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
     private void CompleteSuccess(GoogleNativeCredential credential)
     {
         TaskCompletionSource<GoogleNativeCredential>? pending;
+
         lock (_gate)
         {
             pending = _pending;
@@ -122,6 +194,7 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
     private void CompleteException(System.Exception exception)
     {
         TaskCompletionSource<GoogleNativeCredential>? pending;
+
         lock (_gate)
         {
             pending = _pending;
@@ -135,6 +208,7 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
     private void CompleteCanceled(CancellationToken cancellationToken)
     {
         TaskCompletionSource<GoogleNativeCredential>? pending;
+
         lock (_gate)
         {
             pending = _pending;
@@ -146,6 +220,38 @@ public sealed class AndroidGoogleNativeAuthService : JObject, IGoogleNativeAuthS
             pending?.TrySetCanceled(cancellationToken);
         else
             pending?.TrySetCanceled();
+    }
+
+    private sealed class ClearCredentialCallback : JObject, ICredentialManagerCallback
+    {
+        private readonly TaskCompletionSource<bool> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Completion => _completion.Task;
+
+        public void OnResult(JObject? result)
+            => _completion.TrySetResult(true);
+
+        public void OnError(JObject error)
+        {
+            if (error.TryJavaCast(out ClearCredentialException? exception) &&
+                exception is not null)
+            {
+                _completion.TrySetException(
+                    new InvalidOperationException(
+                        exception.ErrorMessage ??
+                        "Não foi possível limpar o estado da conta Google.",
+                        exception));
+                return;
+            }
+
+            _completion.TrySetException(
+                new InvalidOperationException(
+                    "Não foi possível limpar o estado da conta Google."));
+        }
+
+        public void Cancel(CancellationToken cancellationToken)
+            => _completion.TrySetCanceled(cancellationToken);
     }
 }
 #endif

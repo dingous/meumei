@@ -4,7 +4,13 @@ public sealed class UnsupportedGoogleNativeAuthService : IGoogleNativeAuthServic
 {
     public bool IsSupported => false;
 
-    public Task<GoogleNativeCredential> SignInAsync(CancellationToken cancellationToken = default)
+    public Task<GoogleNativeCredential> SignInAsync(
+        CancellationToken cancellationToken = default)
         => Task.FromException<GoogleNativeCredential>(
-            new PlatformNotSupportedException("O login Google nativo está disponível no Android."));
+            new PlatformNotSupportedException(
+                "O login Google nativo está disponível no Android."));
+
+    public Task SignOutAsync(
+        CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }

@@ -2,37 +2,37 @@
 
 Aplicativo de utilidades para MEI em .NET MAUI, com Android e Windows na mesma base C#/XAML. A versão atual prioriza confiabilidade, privacidade, responsividade e custo operacional mínimo.
 
-## Versão 1.0.4
+## Versão 1.0.5
 
 Esta é uma revisão de hardening e acabamento. Não cria módulos de negócio novos.
 
 ### Correções desta revisão
 
-- o limite anual considera a receita bruta efetivamente recebida e ignora receitas anteriores à data de abertura do MEI;
-- saldo mensal considera somente receitas recebidas e despesas pagas;
-- login Dingous deixa de forçar o tenant 1 e usa sessão de identidade sem empresa fixa;
-- o endpoint de autenticação Dingous aceita CompanyId 0 apenas como escopo neutro e continua rejeitando valores negativos;
-- páginas respeitam explicitamente as safe areas do .NET MAUI 10;
-- formulários críticos respeitam também teclado/soft input com SafeAreaEdges=All;
-- salvamentos ficam protegidos contra duplicação caso o registro seja gravado e a navegação de retorno falhe;
-- exclusão de lançamento exige confirmação;
-- Auto Backup Android foi desativado para manter os dados financeiros locais fora do backup em nuvem do sistema;
-- versão do app avançada para 1.0.4 / build 5.
-- calendário evita afirmar atraso definitivo quando usa apenas uma data-base local; após a data, orienta revisar o prazo oficial.
-- cálculos tratam overflow de valores extremos sem derrubar a tela.
-- manifest Windows foi alinhado ao padrão MAUI com resources, tile e splash.
+- logout Google no Android agora limpa também o estado do Credential Manager, além do JWT do Dingous;
+- novo cadastro deixa de assumir abertura em 1º de janeiro e usa a data atual como default conservador;
+- cálculo mensal ignora lançamentos anteriores à data de abertura do MEI;
+- estado corrompido com data de abertura futura deixa de contaminar os totais do dashboard;
+- transações, clientes, orçamentos e obrigações ganharam ordenação determinística para evitar troca visual de posição em itens empatados;
+- validação do CNPJ alfanumérico deixou de rejeitar indevidamente bases repetidas que tenham dígitos verificadores válidos;
+- campos de texto passam a exibir botão de limpar durante a edição;
+- botões desabilitados ganharam estado visual mais claro;
+- versão avançada para 1.0.5 / build 6.
 
 ### Mantido das revisões anteriores
 
 - suporte ao CNPJ alfanumérico vigente em 2026;
-- validação local de CPF e CNPJ, inclusive dígitos verificadores do novo CNPJ;
+- validação local de CPF e CNPJ;
+- receita anual baseada no que foi efetivamente recebido;
+- obrigações respeitando a data de abertura;
+- proteção contra salvamentos duplicados e exclusão acidental;
+- safe areas do .NET MAUI 10;
 - SQLite protegido contra inicialização concorrente;
-- obrigações respeitam a data de abertura do MEI;
+- login Google nativo via Credential Manager;
 - sessão Dingous em SecureStorage;
-- Credential Manager + Sign in with Google no Android;
+- Auto Backup Android desativado;
 - cards, listas e formulários responsivos em mobile e desktop;
 - flyout desktop adaptável para janelas estreitas;
-- estados vazios, loading e mensagens de erro consistentes.
+- manifest Windows com resources, tiles e splash.
 
 Não foram adicionados CI/CD, AppSettings, serviços pagos ou infraestrutura nova.
 
@@ -57,13 +57,7 @@ O login Android usa:
 
 O app obtém o ID Token pelo Google nativo, envia esse token ao DingousChatTrade e guarda o JWT retornado no SecureStorage. Nenhum ClientSecret Google é incluído no aplicativo.
 
-Para o Meu MEI, o pedido de autenticação usa `CompanyId = 0`, evitando vincular todo usuário ao tenant 1. O token continua com role Customer, mas sem empresa fixa.
-
-## CNPJ alfanumérico
-
-O cadastro aceita CNPJ numérico tradicional e CNPJ alfanumérico de 14 posições. As doze primeiras posições podem conter letras A-Z e números; as duas últimas são dígitos verificadores numéricos.
-
-A validação é local, por módulo 11, sem API externa e sem custo por consulta.
+Para o Meu MEI, a autenticação usa `CompanyId = 0`, evitando vincular todos os usuários a um tenant comercial fixo.
 
 ## Persistência e privacidade
 
@@ -73,7 +67,7 @@ Os dados operacionais permanecem no SQLite local:
 
 Isso inclui lançamentos, clientes, orçamentos, perfil e lembretes.
 
-No Android, o Auto Backup foi desativado porque o aplicativo manipula informações financeiras e o produto comunica armazenamento local.
+No Android, o Auto Backup permanece desativado.
 
 ## Google nativo — checklist de produção
 
@@ -86,7 +80,7 @@ Antes da publicação:
 1. mantenha esse package id cadastrado no projeto Google;
 2. cadastre SHA-1/SHA-256 da chave de assinatura de produção;
 3. confirme que o Server/Web Client ID usado pelo app corresponde a um audience aceito pelo DingousChatTrade;
-4. valide o login usando o AAB/APK assinado.
+4. valide login e logout usando o AAB/APK assinado.
 
 ## Build local
 
@@ -100,7 +94,7 @@ dotnet build -c Release -f net10.0-windows10.0.19041.0
 
 ## Primeiro ano grátis
 
-O período de 365 dias continua local em `Preferences`, conforme o escopo original. Reinstalar ou limpar os dados pode reiniciar esse período. Transferir essa licença para o backend seria uma alteração de regra de produto e não faz parte deste hardening.
+O período de 365 dias continua local em `Preferences`, conforme o escopo original. Reinstalar ou limpar os dados pode reiniciar esse período. Transferir essa licença para o backend seria alteração de regra de produto e não faz parte deste hardening.
 
 ## Obrigações
 
