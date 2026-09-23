@@ -43,7 +43,7 @@ O login Android usa:
 
 `POST https://dingous.com.br/api/auth/google-game`
 
-O Meu MEI usa escopo neutro `CompanyId = 0`.
+O Meu MEI usa escopo neutro `CompanyId = 0`. O DingousChatTrade emite esse token com role interna `Identity`, scope `identity` e audience `DingousIdentity`, portanto ele não é aceito pelos endpoints normais de chat/empresa.
 
 ## Persistência
 

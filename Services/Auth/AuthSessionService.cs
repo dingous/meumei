@@ -5,29 +5,41 @@ namespace MEIUtil.Services.Auth;
 public sealed class AuthSessionService
 {
     private const string SessionKey = "dingous_auth_session";
+
+    private readonly SemaphoreSlim _storageGate = new(1, 1);
     private AuthSession? _cached;
 
     public async Task<AuthSession?> GetAsync()
     {
-        if (_cached is not null)
-        {
-            if (!_cached.IsExpired)
-                return _cached;
-
-            Clear();
-            return null;
-        }
+        await _storageGate.WaitAsync();
 
         try
         {
-            var raw = await SecureStorage.Default.GetAsync(SessionKey);
+            if (_cached is not null)
+            {
+                if (!_cached.IsExpired)
+                    return _cached;
+
+                _cached = null;
+                TryRemoveUnsafe();
+                return null;
+            }
+
+            var raw =
+                await SecureStorage.Default
+                    .GetAsync(SessionKey);
+
             if (string.IsNullOrWhiteSpace(raw))
                 return null;
 
-            var session = JsonSerializer.Deserialize<AuthSession>(raw);
-            if (session is null || session.IsExpired)
+            var session =
+                JsonSerializer.Deserialize<AuthSession>(raw);
+
+            if (session is null ||
+                session.IsExpired)
             {
-                Clear();
+                _cached = null;
+                TryRemoveUnsafe();
                 return null;
             }
 
@@ -36,30 +48,80 @@ public sealed class AuthSessionService
         }
         catch
         {
-            Clear();
+            _cached = null;
             return null;
+        }
+        finally
+        {
+            _storageGate.Release();
         }
     }
 
-    public async Task SaveAsync(AuthSession session)
+    public async Task SaveAsync(
+        AuthSession session)
     {
+        ArgumentNullException.ThrowIfNull(session);
+
         if (session.IsExpired)
-            throw new InvalidOperationException("Não é possível salvar uma sessão já expirada.");
+        {
+            throw new InvalidOperationException(
+                "Não é possível salvar uma sessão já expirada.");
+        }
 
-        await SecureStorage.Default.SetAsync(SessionKey, JsonSerializer.Serialize(session));
-        _cached = session;
-    }
+        await _storageGate.WaitAsync();
 
-    public void Clear()
-    {
-        _cached = null;
         try
         {
-            SecureStorage.Default.Remove(SessionKey);
+            await SecureStorage.Default.SetAsync(
+                SessionKey,
+                JsonSerializer.Serialize(session));
+
+            _cached = session;
+        }
+        finally
+        {
+            _storageGate.Release();
+        }
+    }
+
+    public async Task<bool> ClearAsync()
+    {
+        await _storageGate.WaitAsync();
+
+        try
+        {
+            _cached = null;
+
+            SecureStorage.Default.Remove(
+                SessionKey);
+
+            var remaining =
+                await SecureStorage.Default
+                    .GetAsync(SessionKey);
+
+            return string.IsNullOrWhiteSpace(
+                remaining);
         }
         catch
         {
-            // O cache em memória já foi invalidado. Falhas do cofre do SO não devem derrubar a UI.
+            return false;
+        }
+        finally
+        {
+            _storageGate.Release();
+        }
+    }
+
+    private static void TryRemoveUnsafe()
+    {
+        try
+        {
+            SecureStorage.Default.Remove(
+                SessionKey);
+        }
+        catch
+        {
+            // A sessão expirada continua sendo rejeitada em memória.
         }
     }
 }
@@ -71,5 +133,7 @@ public sealed record AuthSession(
     string Email,
     string PictureUrl)
 {
-    public bool IsExpired => ExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(1);
+    public bool IsExpired =>
+        ExpiresAt <=
+        DateTimeOffset.UtcNow.AddMinutes(1);
 }

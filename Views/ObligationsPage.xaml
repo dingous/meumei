@@ -6,7 +6,7 @@
 <Label Grid.Row="2" Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}"/>
 <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None">
 <CollectionView.EmptyView><VerticalStackLayout Padding="32" Spacing="6"><Label Text="Nenhuma obrigação pendente no calendário" HorizontalTextAlignment="Center" FontAttributes="Bold"/><Label Text="Os lembretes aplicáveis à sua data de abertura aparecerão aqui." Style="{StaticResource Caption}" HorizontalTextAlignment="Center"/></VerticalStackLayout></CollectionView.EmptyView>
-<CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource Card}" Margin="0,0,0,9"><VerticalStackLayout Spacing="11">
+<CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource Card}" Margin="0,0,0,9"><Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsDone}" Value="True"><Setter Property="Opacity" Value="0.72"/></DataTrigger></Border.Triggers><VerticalStackLayout Spacing="11">
 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
 <VerticalStackLayout Spacing="2"><Label Text="{Binding Title}" FontAttributes="Bold"/><Label Text="{Binding Reference, StringFormat='Referência: {0}'}" Style="{StaticResource Caption}"/></VerticalStackLayout>
 <Border Grid.Column="1" Style="{StaticResource Pill}">
