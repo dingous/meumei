@@ -7,7 +7,8 @@ using MEIUtil.Views;
 
 namespace MEIUtil.ViewModels;
 
-public partial class TransactionsViewModel(DatabaseService database) : ObservableObject
+public partial class TransactionsViewModel(
+    DatabaseService database) : ObservableObject
 {
     public ObservableCollection<Transaction> Items { get; } = [];
 
@@ -16,6 +17,7 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
     [ObservableProperty] private decimal balance;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string errorMessage = string.Empty;
+
     private bool _deletePromptOpen;
 
     [RelayCommand]
@@ -26,13 +28,15 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
 
         IsBusy = true;
         ErrorMessage = string.Empty;
+
         try
         {
             await LoadCoreAsync();
         }
         catch
         {
-            ErrorMessage = "Não foi possível carregar os lançamentos.";
+            ErrorMessage =
+                "Não foi possível carregar os lançamentos.";
         }
         finally
         {
@@ -42,22 +46,41 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
 
     private async Task LoadCoreAsync()
     {
-        var start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        var data = await database.GetTransactionsAsync(start, start.AddMonths(1));
+        var today =
+            DateTime.Today;
+
+        var start =
+            new DateTime(
+                today.Year,
+                today.Month,
+                1);
+
+        var data =
+            await database.GetTransactionsAsync(
+                start,
+                start.AddMonths(1));
 
         Items.Clear();
+
         foreach (var item in data)
             Items.Add(item);
 
         TotalRevenue = data
-            .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
+            .Where(x =>
+                x.Type == TransactionTypes.Revenue &&
+                x.IsPaid &&
+                x.Date.Date <= today)
             .Sum(x => x.Amount);
 
         TotalExpenses = data
-            .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
+            .Where(x =>
+                x.Type == TransactionTypes.Expense &&
+                x.IsPaid &&
+                x.Date.Date <= today)
             .Sum(x => x.Amount);
 
-        Balance = TotalRevenue - TotalExpenses;
+        Balance =
+            TotalRevenue - TotalExpenses;
     }
 
     [RelayCommand]
@@ -71,39 +94,52 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
             $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
 
     [RelayCommand]
-    private async Task DeleteAsync(Transaction? item)
+    private async Task DeleteAsync(
+        Transaction? item)
     {
-        if (item is null || IsBusy || _deletePromptOpen)
+        if (item is null ||
+            IsBusy ||
+            _deletePromptOpen)
+        {
             return;
+        }
 
         _deletePromptOpen = true;
         ErrorMessage = string.Empty;
 
         try
         {
-            var shell = Shell.Current;
+            var shell =
+                Shell.Current;
+
             if (shell is null)
             {
-                ErrorMessage = "Não foi possível abrir a confirmação de exclusão.";
+                ErrorMessage =
+                    "Não foi possível abrir a confirmação de exclusão.";
                 return;
             }
 
-            var confirmed = await shell.DisplayAlertAsync(
-                "Excluir lançamento",
-                $"Deseja excluir “{item.Description}” no valor de {item.Amount:C2}?",
-                "Excluir",
-                "Cancelar");
+            var confirmed =
+                await shell.DisplayAlertAsync(
+                    "Excluir lançamento",
+                    $"Deseja excluir “{item.Description}” no valor de {item.Amount:C2}?",
+                    "Excluir",
+                    "Cancelar");
 
             if (!confirmed)
                 return;
 
             IsBusy = true;
-            await database.DeleteTransactionAsync(item);
+
+            await database
+                .DeleteTransactionAsync(item);
+
             await LoadCoreAsync();
         }
         catch
         {
-            ErrorMessage = "Não foi possível excluir este lançamento.";
+            ErrorMessage =
+                "Não foi possível excluir este lançamento.";
         }
         finally
         {

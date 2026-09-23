@@ -65,7 +65,7 @@
         <Setter Property="VerticalTextAlignment" Value="Center"/>
     </Style>
 
-    <Style TargetType="Button">
+    <Style x:Key="BaseButton" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}"/>
         <Setter Property="TextColor" Value="White"/>
         <Setter Property="CornerRadius" Value="14"/>
@@ -76,6 +76,16 @@
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal"/>
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.92"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.82"/>
+                        </VisualState.Setters>
+                    </VisualState>
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
                             <Setter Property="Opacity" Value="0.55"/>
@@ -86,17 +96,19 @@
         </Setter>
     </Style>
 
-    <Style x:Key="SecondaryButton" TargetType="Button">
+    <Style TargetType="Button" BasedOn="{StaticResource BaseButton}"/>
+
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="BackgroundColor" Value="{StaticResource PrimarySoft}"/>
         <Setter Property="TextColor" Value="{StaticResource PrimaryDark}"/>
     </Style>
 
-    <Style x:Key="DangerButton" TargetType="Button">
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="BackgroundColor" Value="{StaticResource Danger}"/>
         <Setter Property="TextColor" Value="White"/>
     </Style>
 
-    <Style x:Key="GhostButton" TargetType="Button">
+    <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <Setter Property="TextColor" Value="{StaticResource TextSecondary}"/>
         <Setter Property="Padding" Value="8,4"/>

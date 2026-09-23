@@ -78,13 +78,15 @@ public partial class DashboardViewModel(
             MonthRevenue = monthItems
                 .Where(x =>
                     x.Type == TransactionTypes.Revenue &&
-                    x.IsPaid)
+                    x.IsPaid &&
+                    x.Date.Date <= today)
                 .Sum(x => x.Amount);
 
             MonthExpenses = monthItems
                 .Where(x =>
                     x.Type == TransactionTypes.Expense &&
-                    x.IsPaid)
+                    x.IsPaid &&
+                    x.Date.Date <= today)
                 .Sum(x => x.Amount);
 
             MonthBalance =
@@ -109,7 +111,8 @@ public partial class DashboardViewModel(
             AnnualRevenue = yearItems
                 .Where(x =>
                     x.Type == TransactionTypes.Revenue &&
-                    x.Date.Date >= revenueStart)
+                    x.Date.Date >= revenueStart &&
+                    x.Date.Date <= today)
                 .Sum(x => x.Amount);
 
             AnnualLimit =

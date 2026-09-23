@@ -18,8 +18,11 @@ public sealed class SeedService(DatabaseService database)
             var profile =
                 await database.GetProfileAsync();
 
+            var today =
+                DateTime.Today;
+
             var currentYear =
-                DateTime.Today.Year;
+                today.Year;
 
             var keys = existing
                 .Select(x => x.Key)
@@ -41,12 +44,6 @@ public sealed class SeedService(DatabaseService database)
                  month <= 12;
                  month++)
             {
-                var key =
-                    $"DAS-{currentYear}-{month:00}";
-
-                if (!keys.Add(key))
-                    continue;
-
                 var referenceDate =
                     new DateTime(
                         currentYear,
@@ -56,6 +53,21 @@ public sealed class SeedService(DatabaseService database)
                 var dueMonth =
                     referenceDate.AddMonths(1);
 
+                var dueDate =
+                    new DateTime(
+                        dueMonth.Year,
+                        dueMonth.Month,
+                        20);
+
+                if (dueDate.Date < today)
+                    continue;
+
+                var key =
+                    $"DAS-{currentYear}-{month:00}";
+
+                if (!keys.Add(key))
+                    continue;
+
                 await database.SaveObligationAsync(
                     new ObligationRecord
                     {
@@ -64,10 +76,7 @@ public sealed class SeedService(DatabaseService database)
                         Title = "Pagamento mensal DAS",
                         Reference =
                             referenceDate.ToString("MM/yyyy"),
-                        DueDate = new DateTime(
-                            dueMonth.Year,
-                            dueMonth.Month,
-                            20)
+                        DueDate = dueDate
                     });
             }
 
@@ -79,12 +88,14 @@ public sealed class SeedService(DatabaseService database)
             {
                 await EnsureDasnAsync(
                     previousReferenceYear,
-                    keys);
+                    keys,
+                    today);
             }
 
             await EnsureDasnAsync(
                 currentYear,
-                keys);
+                keys,
+                today);
         }
         finally
         {
@@ -94,10 +105,20 @@ public sealed class SeedService(DatabaseService database)
 
     private async Task EnsureDasnAsync(
         int referenceYear,
-        HashSet<string> keys)
+        HashSet<string> keys,
+        DateTime today)
     {
         var dueYear =
             referenceYear + 1;
+
+        var dueDate =
+            new DateTime(
+                dueYear,
+                5,
+                31);
+
+        if (dueDate.Date < today)
+            return;
 
         var key =
             $"DASN-{dueYear}";
@@ -114,11 +135,7 @@ public sealed class SeedService(DatabaseService database)
                     "Declaração anual DASN-SIMEI",
                 Reference =
                     referenceYear.ToString(),
-                DueDate =
-                    new DateTime(
-                        dueYear,
-                        5,
-                        31)
+                DueDate = dueDate
             });
     }
 }
