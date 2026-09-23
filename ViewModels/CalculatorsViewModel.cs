@@ -18,6 +18,7 @@ public partial class CalculatorsViewModel : ObservableObject
     private void CalculateHourlyRate()
     {
         ErrorMessage = string.Empty;
+
         if (BillableHours <= 0)
         {
             HourlyRate = 0;
@@ -32,13 +33,24 @@ public partial class CalculatorsViewModel : ObservableObject
             return;
         }
 
-        HourlyRate = Math.Round((DesiredMonthlyIncome + MonthlyBusinessCosts) / BillableHours, 2);
+        try
+        {
+            HourlyRate = Math.Round(
+                (DesiredMonthlyIncome + MonthlyBusinessCosts) / BillableHours,
+                2);
+        }
+        catch (OverflowException)
+        {
+            HourlyRate = 0;
+            ErrorMessage = "Os valores informados são altos demais para o cálculo.";
+        }
     }
 
     [RelayCommand]
     private void CalculateSalePrice()
     {
         ErrorMessage = string.Empty;
+
         if (ProductCost <= 0 || DesiredMarginPercent < 0 || DesiredMarginPercent >= 100)
         {
             SuggestedSalePrice = 0;
@@ -46,7 +58,15 @@ public partial class CalculatorsViewModel : ObservableObject
             return;
         }
 
-        var margin = DesiredMarginPercent / 100m;
-        SuggestedSalePrice = Math.Round(ProductCost / (1m - margin), 2);
+        try
+        {
+            var margin = DesiredMarginPercent / 100m;
+            SuggestedSalePrice = Math.Round(ProductCost / (1m - margin), 2);
+        }
+        catch (OverflowException)
+        {
+            SuggestedSalePrice = 0;
+            ErrorMessage = "Os valores informados são altos demais para o cálculo.";
+        }
     }
 }

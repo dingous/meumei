@@ -16,6 +16,7 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
     [ObservableProperty] private decimal balance;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string errorMessage = string.Empty;
+    private bool _deletePromptOpen;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -72,12 +73,21 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
     [RelayCommand]
     private async Task DeleteAsync(Transaction? item)
     {
-        if (item is null || IsBusy)
+        if (item is null || IsBusy || _deletePromptOpen)
             return;
 
-        var shell = Shell.Current;
-        if (shell is not null)
+        _deletePromptOpen = true;
+        ErrorMessage = string.Empty;
+
+        try
         {
+            var shell = Shell.Current;
+            if (shell is null)
+            {
+                ErrorMessage = "Não foi possível abrir a confirmação de exclusão.";
+                return;
+            }
+
             var confirmed = await shell.DisplayAlertAsync(
                 "Excluir lançamento",
                 $"Deseja excluir “{item.Description}” no valor de {item.Amount:C2}?",
@@ -86,12 +96,8 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
 
             if (!confirmed)
                 return;
-        }
 
-        IsBusy = true;
-        ErrorMessage = string.Empty;
-        try
-        {
+            IsBusy = true;
             await database.DeleteTransactionAsync(item);
             await LoadCoreAsync();
         }
@@ -102,6 +108,7 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
         finally
         {
             IsBusy = false;
+            _deletePromptOpen = false;
         }
     }
 }

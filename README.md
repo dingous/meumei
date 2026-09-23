@@ -2,13 +2,13 @@
 
 Aplicativo de utilidades para MEI em .NET MAUI, com Android e Windows na mesma base C#/XAML. A versão atual prioriza confiabilidade, privacidade, responsividade e custo operacional mínimo.
 
-## Versão 1.0.3
+## Versão 1.0.4
 
 Esta é uma revisão de hardening e acabamento. Não cria módulos de negócio novos.
 
 ### Correções desta revisão
 
-- o limite anual passa a considerar a receita bruta efetivamente recebida, coerente com a regra atual do MEI;
+- o limite anual considera a receita bruta efetivamente recebida e ignora receitas anteriores à data de abertura do MEI;
 - saldo mensal considera somente receitas recebidas e despesas pagas;
 - login Dingous deixa de forçar o tenant 1 e usa sessão de identidade sem empresa fixa;
 - o endpoint de autenticação Dingous aceita CompanyId 0 apenas como escopo neutro e continua rejeitando valores negativos;
@@ -17,7 +17,10 @@ Esta é uma revisão de hardening e acabamento. Não cria módulos de negócio n
 - salvamentos ficam protegidos contra duplicação caso o registro seja gravado e a navegação de retorno falhe;
 - exclusão de lançamento exige confirmação;
 - Auto Backup Android foi desativado para manter os dados financeiros locais fora do backup em nuvem do sistema;
-- versão do app avançada para 1.0.3 / build 4.
+- versão do app avançada para 1.0.4 / build 5.
+- calendário evita afirmar atraso definitivo quando usa apenas uma data-base local; após a data, orienta revisar o prazo oficial.
+- cálculos tratam overflow de valores extremos sem derrubar a tela.
+- manifest Windows foi alinhado ao padrão MAUI com resources, tile e splash.
 
 ### Mantido das revisões anteriores
 

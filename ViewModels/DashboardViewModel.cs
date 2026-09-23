@@ -75,8 +75,15 @@ public partial class DashboardViewModel(
             var yearStart = new DateTime(today.Year, 1, 1);
             var yearItems = await database.GetTransactionsAsync(yearStart, yearStart.AddYears(1));
 
+            var revenueStart = profile.OpenedAt.Year == today.Year
+                ? profile.OpenedAt.Date
+                : yearStart;
+
             AnnualRevenue = yearItems
-                .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
+                .Where(x =>
+                    x.Type == TransactionTypes.Revenue &&
+                    x.IsPaid &&
+                    x.Date.Date >= revenueStart)
                 .Sum(x => x.Amount);
 
             AnnualLimit = rules.GetApplicableAnnualLimit(profile, today);
@@ -102,8 +109,8 @@ public partial class DashboardViewModel(
             {
                 NextObligation = $"{next.Title} • {next.Reference}";
                 NextObligationDate = next.DueDate.Date < today
-                    ? $"Vencido em {next.DueDate:dd/MM/yyyy}"
-                    : $"Vence em {next.DueDate:dd/MM/yyyy}";
+                    ? $"Data-base {next.DueDate:dd/MM/yyyy} já passou • confirme o prazo oficial"
+                    : $"Data-base: {next.DueDate:dd/MM/yyyy}";
             }
 
             var status = trial.GetStatus();

@@ -35,7 +35,9 @@ public partial class QuotesViewModel(DatabaseService database) : ObservableObjec
     [RelayCommand]
     private async Task ShareAsync(Quote? quote)
     {
-        if (quote is null) return;
+        if (quote is null || IsBusy) return;
+
+        ErrorMessage = string.Empty;
         try
         {
             var content = $"ORÇAMENTO {quote.Number}\nCliente: {quote.ClientName}\n\n{quote.Description}\n\nTotal: {quote.Total:C2}\nValidade: {quote.ValidUntil:dd/MM/yyyy}";
