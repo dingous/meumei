@@ -1,116 +1,88 @@
 # Meu MEI — .NET MAUI
 
-Aplicativo offline-first para organizar a rotina do Microempreendedor Individual em **Android e Windows**, com uma única base em C#/XAML.
+Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base C#/XAML. O foco da versão 1.0 é simplicidade, operação offline e custo operacional mínimo.
 
-O produto foi desenhado para ser simples para quem não quer aprender um ERP: abrir o app, registrar dinheiro que entrou/saiu, acompanhar o limite do MEI, organizar clientes, orçamentos e obrigações.
+## Versão 1.0.0
 
-## Estado atual
-
-- Dashboard de caixa mensal.
-- Faturamento anual, limite aplicável e projeção.
-- Receitas e despesas com situação recebido/pago.
+- Dashboard de receitas, despesas, saldo e projeção anual.
+- Acompanhamento do limite anual e limite proporcional para abertura durante o ano.
+- Receitas e despesas em SQLite local.
 - Clientes.
-- Orçamentos e compartilhamento nativo.
-- Calendário de apoio para DAS e DASN-SIMEI.
+- Orçamentos com compartilhamento nativo.
+- Lembretes de DAS e DASN-SIMEI.
 - Calculadoras de valor/hora e preço por margem.
-- Cadastro do MEI.
+- Dados cadastrais do MEI.
 - Primeiro ano grátis por 365 dias.
-- SQLite local e funcionamento sem internet.
-- Sincronização opcional com o backend DingousChatTrade após login.
 - Login Google nativo no Android via Credential Manager.
-- Login Google seguro no Windows via navegador do sistema + OAuth 2.0 Authorization Code + PKCE.
-- JWT e identidade centralizados no DingousChatTrade.
+- Validação do ID Token e emissão da sessão pelo DingousChatTrade.
+- Interface responsiva para mobile e desktop.
 
 ## Stack
 
 - .NET 10 + .NET MAUI
-- C# / XAML
 - CommunityToolkit.Mvvm 8.4.2
 - sqlite-net-pcl 1.11.285
-- AndroidX Credential Manager
-- Google ID binding para Android
+- AndroidX Credential Manager / Sign in with Google
 - Shell Navigation
-- SecureStorage para sessão
-- SQLite para dados offline
+- SecureStorage para a sessão autenticada
 
 ## Backend
 
-O app usa o backend existente em `https://dingous.com.br/`.
+O backend do aplicativo é o **DingousChatTrade**. A versão 1.0 usa o endpoint já existente:
 
-Rotas esperadas:
+`POST https://dingous.com.br/api/auth/google-game`
 
-- `GET /api/auth/google-native-config`
-- `POST /api/auth/google-game`
-- `GET /api/mei/snapshot`
-- `PUT /api/mei/snapshot`
+O aplicativo obtém o ID Token pelo Google nativo no Android, envia somente esse token ao backend e armazena o JWT retornado usando `SecureStorage`. Client secret do Google não fica no aplicativo.
 
-A integração correspondente está preparada no repositório `dingous/ChatTrade` no PR **#10**.
+Os dados operacionais do MVP (lançamentos, clientes, orçamentos, perfil e obrigações) continuam offline-first em SQLite. Isso mantém o app utilizável sem internet e sem criar custo adicional por usuário.
 
-Nenhum segredo Google fica no app. O cliente recebe apenas Client IDs públicos, obtém o ID Token na plataforma e o troca por um JWT emitido pelo DingousChatTrade.
+## Google nativo — checklist de produção
 
-## Persistência e sincronização
-
-O banco local fica em:
-
-`FileSystem.AppDataDirectory/meumei.db3`
-
-O app é **offline-first**. Sem rede ou sem login, todas as operações continuam funcionando localmente. Com uma conta Google conectada, o snapshot local é sincronizado com o DingousChatTrade.
-
-No Android, backup automático do banco foi desativado para evitar restauração involuntária de dados financeiros em outro aparelho. Tráfego HTTP sem TLS também foi desativado.
-
-## Primeiro ano grátis
-
-O início do período gratuito é guardado localmente e, após login, também no backend. O app considera a data mais antiga para evitar que reinstalação ou troca de aparelho reinicie indevidamente os 365 dias.
-
-## Google no Android
-
-O Android usa Credential Manager com `GetSignInWithGoogleOption` e recebe um Google ID Token. Para produção, o projeto OAuth usado no Dingous precisa reconhecer o pacote:
+O package id Android desta versão é:
 
 `br.com.dingous.meumei`
 
-Também é necessário cadastrar no Google Cloud/Play Console as impressões digitais SHA-1/SHA-256 do certificado que assinará a versão de produção. Isso é configuração da credencial Google, não exige segredo dentro do app.
+Antes de publicar:
 
-## Google no Windows
+1. Cadastre esse package id no projeto Google usado pelo Dingous.
+2. Cadastre o SHA-1/SHA-256 da chave usada para assinar a versão de produção.
+3. Garanta que o OAuth Web/Server Client ID usado pelo app seja aceito como `audience` pelo endpoint `api/auth/google-game` do DingousChatTrade.
+4. Faça um login real usando o APK/AAB assinado para validar a configuração de produção.
 
-Aplicativos desktop não recebem o mesmo seletor de conta do Android. O fluxo usa o navegador padrão do sistema com:
+Nenhum `ClientSecret` deve ser incluído no projeto MAUI.
 
-- Authorization Code;
-- PKCE;
-- `state` anti-CSRF;
-- redirect loopback em `127.0.0.1`;
-- sem Client Secret armazenado no executável.
+## Abrindo no Visual Studio
 
-## Rodando
+1. Instale o workload **.NET MAUI** do Visual Studio.
+2. Abra `MEIUtil.sln`.
+3. Restaure os pacotes NuGet.
+4. Selecione Android ou Windows.
+5. Execute.
 
-Requisitos:
-
-1. Visual Studio com workload .NET MAUI.
-2. SDK .NET 10.
-3. Android SDK/Emulador para Android ou Windows Machine para desktop.
-
-Abra `MEIUtil.sln`, restaure os pacotes e execute.
-
-CLI:
+Via CLI, com .NET 10 e workload MAUI instalados:
 
 ```bash
-dotnet workload restore
 dotnet restore
 dotnet build -f net10.0-android
 dotnet build -f net10.0-windows10.0.19041.0
 ```
 
-## Checklist antes da publicação
+## Persistência
 
-- Compilar Release para Android e Windows.
-- Testar instalação limpa e atualização sobre versão anterior.
-- Testar banco com centenas/milhares de lançamentos.
-- Testar modo avião e retorno da conectividade.
-- Testar login Google com conta existente, cancelamento e ausência de conta no Android.
-- Testar expiração de sessão Dingous.
-- Testar sincronização em dois dispositivos antes de usar dados reais.
-- Validar certificado de produção no Google Cloud/Play Console.
-- Confirmar que o PR #10 do DingousChatTrade está implantado antes de publicar o app com sincronização habilitada.
+O SQLite é criado em:
 
-## Observação sobre obrigações
+`FileSystem.AppDataDirectory/meiutil.db3`
 
-A tela de obrigações é um **organizador e lembrete**. Ela não substitui PGMEI, Receita Federal ou orientação contábil e não calcula multa/juros. Datas e valores de pagamento devem ser confirmados no canal oficial.
+A inicialização é protegida contra chamadas concorrentes e o seed das obrigações é idempotente.
+
+## Primeiro ano grátis
+
+`TrialService` inicia o período de 365 dias na primeira execução e mantém o estado em `Preferences`. Nesta versão o período continua local; reinstalar/limpar dados pode reiniciá-lo. Vincular a licença ao backend mudaria a regra de produto e não faz parte deste hardening da versão 1.0.
+
+## Obrigações
+
+A tela de obrigações é um **lembrete**, não um substituto do Portal do Simples Nacional/PGMEI. O usuário deve confirmar guia, valor, feriados e eventual prorrogação antes do pagamento.
+
+## Escopo deste hardening
+
+Foram priorizados robustez, validação, mensagens de erro, estados vazios, melhor aproveitamento de espaço em desktop, áreas de toque e leitura no mobile e consistência visual. Não foram adicionados CI/CD, AppSettings, serviços pagos nem funcionalidades de negócio fora do escopo existente.

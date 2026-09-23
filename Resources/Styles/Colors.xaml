@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+<Color x:Key="Primary">#4F46E5</Color><Color x:Key="PrimaryDark">#3730A3</Color><Color x:Key="PrimarySoft">#EEF2FF</Color><Color x:Key="Success">#15803D</Color><Color x:Key="SuccessSoft">#ECFDF3</Color><Color x:Key="Warning">#A16207</Color><Color x:Key="WarningSoft">#FFFBEB</Color><Color x:Key="Danger">#B42318</Color><Color x:Key="DangerSoft">#FEF3F2</Color><Color x:Key="PageBackground">#F5F7FB</Color><Color x:Key="Surface">#FFFFFF</Color><Color x:Key="TextPrimary">#101828</Color><Color x:Key="TextSecondary">#667085</Color><Color x:Key="TextMuted">#98A2B3</Color><Color x:Key="Stroke">#EAECF0</Color><Color x:Key="StrokeStrong">#D0D5DD</Color>
+</ResourceDictionary>

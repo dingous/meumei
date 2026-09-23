@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+<Style TargetType="ContentPage"><Setter Property="BackgroundColor" Value="{StaticResource PageBackground}"/><Setter Property="Shell.BackgroundColor" Value="{StaticResource Surface}"/><Setter Property="Shell.ForegroundColor" Value="{StaticResource TextPrimary}"/><Setter Property="Shell.TitleColor" Value="{StaticResource TextPrimary}"/></Style>
+<Style TargetType="Label"><Setter Property="TextColor" Value="{StaticResource TextPrimary}"/><Setter Property="FontSize" Value="14"/><Setter Property="LineBreakMode" Value="WordWrap"/></Style>
+<Style x:Key="TitleLabel" TargetType="Label"><Setter Property="FontSize" Value="28"/><Setter Property="FontAttributes" Value="Bold"/></Style>
+<Style x:Key="SectionTitle" TargetType="Label"><Setter Property="FontSize" Value="18"/><Setter Property="FontAttributes" Value="Bold"/></Style>
+<Style x:Key="Caption" TargetType="Label"><Setter Property="TextColor" Value="{StaticResource TextSecondary}"/><Setter Property="FontSize" Value="12"/></Style>
+<Style x:Key="Eyebrow" TargetType="Label"><Setter Property="TextColor" Value="{StaticResource Primary}"/><Setter Property="FontSize" Value="11"/><Setter Property="FontAttributes" Value="Bold"/></Style>
+<Style x:Key="Card" TargetType="Border"><Setter Property="BackgroundColor" Value="{StaticResource Surface}"/><Setter Property="Stroke" Value="{StaticResource Stroke}"/><Setter Property="StrokeThickness" Value="1"/><Setter Property="Padding" Value="18"/><Setter Property="StrokeShape" Value="RoundRectangle 20"/></Style>
+<Style x:Key="SoftCard" TargetType="Border" BasedOn="{StaticResource Card}"><Setter Property="BackgroundColor" Value="{StaticResource PrimarySoft}"/></Style>
+<Style TargetType="Button"><Setter Property="BackgroundColor" Value="{StaticResource Primary}"/><Setter Property="TextColor" Value="White"/><Setter Property="CornerRadius" Value="14"/><Setter Property="HeightRequest" Value="50"/><Setter Property="FontAttributes" Value="Bold"/></Style>
+<Style x:Key="SecondaryButton" TargetType="Button"><Setter Property="BackgroundColor" Value="{StaticResource PrimarySoft}"/><Setter Property="TextColor" Value="{StaticResource PrimaryDark}"/></Style>
+<Style x:Key="DangerButton" TargetType="Button"><Setter Property="BackgroundColor" Value="{StaticResource Danger}"/><Setter Property="TextColor" Value="White"/></Style>
+<Style x:Key="GhostButton" TargetType="Button"><Setter Property="BackgroundColor" Value="Transparent"/><Setter Property="TextColor" Value="{StaticResource TextSecondary}"/></Style>
+<Style TargetType="Entry"><Setter Property="BackgroundColor" Value="#F9FAFB"/><Setter Property="TextColor" Value="{StaticResource TextPrimary}"/><Setter Property="PlaceholderColor" Value="{StaticResource TextMuted}"/><Setter Property="HeightRequest" Value="50"/></Style>
+<Style TargetType="Editor"><Setter Property="BackgroundColor" Value="#F9FAFB"/><Setter Property="TextColor" Value="{StaticResource TextPrimary}"/></Style>
+<Style TargetType="Picker"><Setter Property="BackgroundColor" Value="#F9FAFB"/><Setter Property="TextColor" Value="{StaticResource TextPrimary}"/><Setter Property="HeightRequest" Value="50"/></Style>
+<Style TargetType="DatePicker"><Setter Property="BackgroundColor" Value="#F9FAFB"/><Setter Property="TextColor" Value="{StaticResource TextPrimary}"/><Setter Property="HeightRequest" Value="50"/></Style>
+<Style TargetType="CheckBox"><Setter Property="Color" Value="{StaticResource Primary}"/></Style>
+<Style TargetType="ActivityIndicator"><Setter Property="Color" Value="{StaticResource Primary}"/></Style>
+</ResourceDictionary>
