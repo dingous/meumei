@@ -6,7 +6,10 @@ using MEIUtil.Services;
 
 namespace MEIUtil.ViewModels;
 
-public partial class ObligationsViewModel(DatabaseService database, SeedService seed) : ObservableObject
+public partial class ObligationsViewModel(
+    DatabaseService database,
+    SeedService seed,
+    MeiRulesService rules) : ObservableObject
 {
     public ObservableCollection<ObligationRecord> Items { get; } = [];
     [ObservableProperty] private bool isBusy;
@@ -16,33 +19,59 @@ public partial class ObligationsViewModel(DatabaseService database, SeedService 
     private async Task LoadAsync()
     {
         if (IsBusy) return;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
         {
             await seed.EnsureAsync();
+            var profile = await database.GetProfileAsync();
+            var items = (await database.GetObligationsAsync())
+                .Where(x => rules.IsObligationApplicable(x, profile))
+                .OrderBy(x => x.IsDone)
+                .ThenBy(x => x.DueDate);
+
             Items.Clear();
-            foreach (var item in await database.GetObligationsAsync()) Items.Add(item);
+            foreach (var item in items)
+                Items.Add(item);
         }
-        catch { ErrorMessage = "Não foi possível carregar o calendário de obrigações."; }
-        finally { IsBusy = false; }
+        catch
+        {
+            ErrorMessage = "Não foi possível carregar o calendário de obrigações.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
     private async Task ToggleDoneAsync(ObligationRecord? item)
     {
         if (item is null || IsBusy) return;
+
+        IsBusy = true;
         ErrorMessage = string.Empty;
+        var previous = item.IsDone;
+        item.IsDone = !previous;
+
         try
         {
-            item.IsDone = !item.IsDone;
             await database.SaveObligationAsync(item);
-            await LoadAsync();
         }
         catch
         {
-            item.IsDone = !item.IsDone;
+            item.IsDone = previous;
             ErrorMessage = "Não foi possível atualizar esta obrigação.";
+            IsBusy = false;
+            return;
         }
+
+        IsBusy = false;
+        await ReloadAsync();
     }
 }

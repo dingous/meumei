@@ -24,12 +24,14 @@ public partial class CalculatorsViewModel : ObservableObject
             ErrorMessage = "Informe uma quantidade de horas maior que zero.";
             return;
         }
+
         if (DesiredMonthlyIncome < 0 || MonthlyBusinessCosts < 0)
         {
             HourlyRate = 0;
             ErrorMessage = "Use valores maiores ou iguais a zero.";
             return;
         }
+
         HourlyRate = Math.Round((DesiredMonthlyIncome + MonthlyBusinessCosts) / BillableHours, 2);
     }
 
@@ -37,12 +39,13 @@ public partial class CalculatorsViewModel : ObservableObject
     private void CalculateSalePrice()
     {
         ErrorMessage = string.Empty;
-        if (ProductCost < 0 || DesiredMarginPercent < 0 || DesiredMarginPercent >= 100)
+        if (ProductCost <= 0 || DesiredMarginPercent < 0 || DesiredMarginPercent >= 100)
         {
             SuggestedSalePrice = 0;
-            ErrorMessage = "Use custo positivo e margem entre 0% e 99,99%.";
+            ErrorMessage = "Use custo maior que zero e margem entre 0% e 99,99%.";
             return;
         }
+
         var margin = DesiredMarginPercent / 100m;
         SuggestedSalePrice = Math.Round(ProductCost / (1m - margin), 2);
     }

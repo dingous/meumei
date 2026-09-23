@@ -20,6 +20,11 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
     private async Task LoadAsync()
     {
         if (IsBusy) return;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
@@ -27,30 +32,54 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
             var start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             var data = await database.GetTransactionsAsync(start, start.AddMonths(1));
             Items.Clear();
-            foreach (var item in data) Items.Add(item);
-            TotalRevenue = data.Where(x => x.Type == TransactionTypes.Revenue).Sum(x => x.Amount);
-            TotalExpenses = data.Where(x => x.Type == TransactionTypes.Expense).Sum(x => x.Amount);
+            foreach (var item in data)
+                Items.Add(item);
+
+            TotalRevenue = data
+                .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
+                .Sum(x => x.Amount);
+            TotalExpenses = data
+                .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
+                .Sum(x => x.Amount);
             Balance = TotalRevenue - TotalExpenses;
         }
-        catch { ErrorMessage = "Não foi possível carregar os lançamentos."; }
-        finally { IsBusy = false; }
+        catch
+        {
+            ErrorMessage = "Não foi possível carregar os lançamentos.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
-    private Task NewRevenueAsync() => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
+    private Task NewRevenueAsync()
+        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
 
     [RelayCommand]
-    private Task NewExpenseAsync() => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
+    private Task NewExpenseAsync()
+        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
 
     [RelayCommand]
     private async Task DeleteAsync(Transaction? item)
     {
         if (item is null || IsBusy) return;
+
+        IsBusy = true;
+        ErrorMessage = string.Empty;
         try
         {
             await database.DeleteTransactionAsync(item);
-            await LoadAsync();
         }
-        catch { ErrorMessage = "Não foi possível excluir este lançamento."; }
+        catch
+        {
+            ErrorMessage = "Não foi possível excluir este lançamento.";
+            IsBusy = false;
+            return;
+        }
+
+        IsBusy = false;
+        await ReloadAsync();
     }
 }

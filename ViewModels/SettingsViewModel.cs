@@ -55,12 +55,13 @@ public partial class SettingsViewModel(
     private async Task SaveAsync()
     {
         if (IsBusy) return;
+
         Message = string.Empty;
         ErrorMessage = string.Empty;
 
         Profile.OwnerName = Profile.OwnerName.Trim();
         Profile.BusinessName = Profile.BusinessName.Trim();
-        Profile.Cnpj = OnlyDigits(Profile.Cnpj);
+        Profile.Cnpj = BrazilianDocumentValidator.Normalize(Profile.Cnpj);
 
         if (Profile.OpenedAt.Date > DateTime.Today)
         {
@@ -74,9 +75,10 @@ public partial class SettingsViewModel(
             return;
         }
 
-        if (Profile.Cnpj.Length is > 0 and not 14)
+        if (!string.IsNullOrWhiteSpace(Profile.Cnpj) &&
+            !BrazilianDocumentValidator.IsValidCnpj(Profile.Cnpj))
         {
-            ErrorMessage = "O CNPJ deve conter 14 números ou ficar em branco.";
+            ErrorMessage = "Informe um CNPJ válido. O formato alfanumérico de 14 posições também é aceito.";
             return;
         }
 
@@ -100,6 +102,7 @@ public partial class SettingsViewModel(
     private async Task SignInWithGoogleAsync()
     {
         if (IsBusy) return;
+
         ErrorMessage = string.Empty;
         Message = string.Empty;
         IsBusy = true;
@@ -121,7 +124,7 @@ public partial class SettingsViewModel(
                 }
                 catch
                 {
-                    // A autenticação já foi concluída; falha ao preencher nome não deve invalidar a sessão.
+                    // A autenticação já foi concluída; falha ao preencher nome não invalida a sessão.
                 }
             }
         }
@@ -143,6 +146,7 @@ public partial class SettingsViewModel(
     private async Task SignOutAsync()
     {
         if (IsBusy) return;
+
         IsBusy = true;
         try
         {
@@ -166,7 +170,8 @@ public partial class SettingsViewModel(
         AccountInitials = Initials(session?.Name, session?.Email);
     }
 
-    partial void OnIsLoggedInChanged(bool value) => OnPropertyChanged(nameof(IsLoggedOut));
+    partial void OnIsLoggedInChanged(bool value)
+        => OnPropertyChanged(nameof(IsLoggedOut));
 
     private static string FriendlyAuthError(string raw)
     {
@@ -184,9 +189,6 @@ public partial class SettingsViewModel(
 
         return raw.Length <= 180 ? raw : "Não foi possível concluir o login Google agora.";
     }
-
-    private static string OnlyDigits(string? value)
-        => string.Concat((value ?? string.Empty).Where(char.IsDigit));
 
     private static string Initials(string? name, string? email)
     {

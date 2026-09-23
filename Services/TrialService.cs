@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace MEIUtil.Services;
 
 public sealed class TrialService
@@ -7,17 +9,28 @@ public sealed class TrialService
 
     public TrialStatus GetStatus()
     {
+        var now = DateTimeOffset.UtcNow;
         var raw = Preferences.Default.Get(TrialStartedKey, string.Empty);
-        if (!DateTime.TryParse(raw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var started))
+
+        if (!DateTimeOffset.TryParse(
+                raw,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var started) ||
+            started > now.AddMinutes(5))
         {
-            started = DateTime.UtcNow;
-            Preferences.Default.Set(TrialStartedKey, started.ToString("O"));
+            started = now;
+            Preferences.Default.Set(TrialStartedKey, started.ToString("O", CultureInfo.InvariantCulture));
         }
 
         var expires = started.Add(TrialDuration);
-        var remaining = expires - DateTime.UtcNow;
-        return new TrialStatus(started, expires, Math.Max(0, (int)Math.Ceiling(remaining.TotalDays)), remaining > TimeSpan.Zero);
+        var remaining = expires - now;
+        var daysRemaining = remaining > TimeSpan.Zero
+            ? Math.Clamp((int)Math.Ceiling(remaining.TotalDays), 0, 365)
+            : 0;
+
+        return new TrialStatus(started, expires, daysRemaining, remaining > TimeSpan.Zero);
     }
 }
 
-public sealed record TrialStatus(DateTime StartedAtUtc, DateTime ExpiresAtUtc, int DaysRemaining, bool IsActive);
+public sealed record TrialStatus(DateTimeOffset StartedAtUtc, DateTimeOffset ExpiresAtUtc, int DaysRemaining, bool IsActive);

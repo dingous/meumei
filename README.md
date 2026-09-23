@@ -1,35 +1,26 @@
 # Meu MEI — .NET MAUI
 
-Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base C#/XAML. O foco é simplicidade, operação offline e custo operacional mínimo.
+Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base C#/XAML. O foco é simplicidade, confiabilidade, operação local e custo operacional mínimo.
 
-## Versão 1.0.1
+## Versão 1.0.2
 
-- Dashboard de receitas, despesas, saldo e projeção anual.
-- Acompanhamento do limite anual e limite proporcional para abertura durante o ano.
-- Receitas e despesas em SQLite local.
-- Clientes.
-- Orçamentos com compartilhamento nativo.
-- Lembretes de DAS e DASN-SIMEI.
-- Calculadoras de valor/hora e preço por margem.
-- Dados cadastrais do MEI.
-- Primeiro ano grátis por 365 dias.
-- Login Google nativo no Android via Credential Manager.
-- Validação do ID Token e emissão da sessão pelo DingousChatTrade.
-- Interface responsiva para mobile e desktop.
+Esta revisão é de hardening e acabamento. Não cria módulos novos.
 
-## Hardening da 1.0.1
+### Correções e melhorias
 
-Esta revisão não cria novos módulos. Ela melhora o produto existente com:
-
-- inicialização SQLite protegida contra concorrência;
-- limpeza segura de sessão expirada;
-- mensagens de erro de conexão/autenticação mais claras;
-- validação de CNPJ, valores e datas;
-- dependências do Google Sign-In explicitadas para builds Android reproduzíveis;
-- cards e formulários que se reorganizam melhor em telas estreitas;
-- estados visuais para pagamentos e obrigações;
-- melhor densidade e leitura em desktop;
-- revisão visual de espaçamentos, hierarquia e estados vazios.
+- suporte ao CNPJ alfanumérico vigente desde julho de 2026;
+- validação local de CPF e CNPJ, incluindo dígitos verificadores do novo CNPJ;
+- campos de CNPJ deixam de forçar teclado exclusivamente numérico;
+- fluxo de caixa mensal considera somente receitas recebidas e despesas pagas;
+- faturamento anual continua considerando as receitas registradas para acompanhamento do limite;
+- lembretes anteriores à abertura do MEI deixam de aparecer como falsas pendências;
+- seed de obrigações respeita o mês de abertura;
+- proteção contra cliques concorrentes em exclusão e atualização de obrigações;
+- navegação lateral do desktop recolhe automaticamente em janelas estreitas;
+- período gratuito ficou mais resistente a valor local corrompido ou relógio inconsistente;
+- binding Android do Credential Manager alinhado às revisões atuais;
+- formulários receberam limites de tamanho, melhores teclados e hierarquia visual;
+- listas, estados vazios, indicadores de carregamento e quebra responsiva foram refinados.
 
 Não foram adicionados CI/CD, AppSettings, serviços pagos ou infraestrutura nova.
 
@@ -44,57 +35,57 @@ Não foram adicionados CI/CD, AppSettings, serviços pagos ou infraestrutura nov
 
 ## Backend
 
-O backend do aplicativo é o **DingousChatTrade**. A versão atual usa o endpoint já existente:
+O backend é o **DingousChatTrade**.
+
+O login Android usa:
 
 `POST https://dingous.com.br/api/auth/google-game`
 
-O aplicativo obtém o ID Token pelo Google nativo no Android, envia somente esse token ao backend e armazena o JWT retornado usando `SecureStorage`. Client secret do Google não fica no aplicativo.
+O app obtém o ID Token pelo Google nativo, envia o token ao DingousChatTrade e armazena o JWT devolvido usando `SecureStorage`. Nenhum ClientSecret Google é incluído no aplicativo.
 
-Os dados operacionais do MVP (lançamentos, clientes, orçamentos, perfil e obrigações) continuam offline-first em SQLite. Isso mantém o app utilizável sem internet e sem criar custo adicional por usuário.
+O endpoint existente do DingousChatTrade aceita os client IDs Google configurados no servidor como audiences válidos para o login nativo, sem exigir alteração de AppSettings.
 
-## Google nativo — checklist de produção
+## CNPJ alfanumérico
 
-O package id Android desta versão é:
+O cadastro aceita tanto o formato numérico tradicional quanto o formato alfanumérico de 14 posições. As 12 primeiras posições podem conter letras de A a Z e números; as duas últimas continuam sendo dígitos verificadores numéricos.
 
-`br.com.dingous.meumei`
-
-Antes de publicar:
-
-1. Cadastre esse package id no projeto Google usado pelo Dingous.
-2. Cadastre o SHA-1/SHA-256 da chave usada para assinar a versão de produção.
-3. Garanta que o OAuth Server/Web Client ID usado pelo app seja aceito como `audience` pelo endpoint `api/auth/google-game` do DingousChatTrade.
-4. Faça um login real usando o APK/AAB assinado para validar a configuração de produção.
-
-Nenhum `ClientSecret` deve ser incluído no projeto MAUI.
-
-## Abrindo no Visual Studio
-
-1. Instale o workload **.NET MAUI** do Visual Studio.
-2. Abra `MEIUtil.sln`.
-3. Restaure os pacotes NuGet.
-4. Selecione Android ou Windows.
-5. Execute.
-
-Via CLI, com .NET 10 e workload MAUI instalados:
-
-```bash
-dotnet restore
-dotnet build -f net10.0-android
-dotnet build -f net10.0-windows10.0.19041.0
-```
+A validação é feita localmente pelo módulo 11, sem API externa e sem custo por consulta.
 
 ## Persistência
 
-O SQLite é criado em:
+Os dados operacionais permanecem em SQLite local:
 
 `FileSystem.AppDataDirectory/meiutil.db3`
 
-A inicialização é protegida contra chamadas concorrentes e o seed das obrigações é idempotente.
+Isso inclui lançamentos, clientes, orçamentos, perfil e lembretes.
+
+## Google nativo — checklist de produção
+
+Package id Android:
+
+`br.com.dingous.meumei`
+
+Antes da publicação:
+
+1. mantenha esse package id cadastrado no projeto Google;
+2. cadastre SHA-1/SHA-256 da chave de assinatura de produção;
+3. confirme que o Server/Web Client ID usado pelo app corresponde a um audience aceito pelo DingousChatTrade;
+4. valide o login no AAB/APK assinado.
+
+## Build local
+
+Com .NET 10 e workload MAUI instalados:
+
+```bash
+dotnet restore
+dotnet build -c Release -f net10.0-android
+dotnet build -c Release -f net10.0-windows10.0.19041.0
+```
 
 ## Primeiro ano grátis
 
-`TrialService` inicia o período de 365 dias na primeira execução e mantém o estado em `Preferences`. Nesta versão o período continua local; reinstalar/limpar dados pode reiniciá-lo. Vincular a licença ao backend mudaria a regra de produto e não faz parte deste hardening.
+O período de 365 dias continua local em `Preferences`, como no escopo original. Reinstalar ou limpar os dados do aplicativo pode reiniciar esse período; mover a licença para o backend seria uma mudança de funcionalidade e não faz parte deste hardening.
 
 ## Obrigações
 
-A tela de obrigações é um **lembrete**, não um substituto do Portal do Simples Nacional/PGMEI. O usuário deve confirmar guia, valor, feriados e eventual prorrogação antes do pagamento.
+A tela de obrigações é um lembrete. Guia, valor, feriados e eventuais prorrogações devem ser confirmados no canal oficial antes do pagamento.

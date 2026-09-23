@@ -4,11 +4,10 @@ namespace MEIUtil;
 
 public sealed class AppShell : Shell
 {
+    private const double LockedFlyoutMinimumWidth = 900;
+
     public AppShell()
     {
-        FlyoutBehavior = DeviceInfo.Idiom == DeviceIdiom.Desktop
-            ? FlyoutBehavior.Locked
-            : FlyoutBehavior.Flyout;
         Title = "Meu MEI";
         FlyoutWidth = DeviceInfo.Idiom == DeviceIdiom.Desktop ? 276 : 300;
         FlyoutHeader = BuildHeader();
@@ -25,6 +24,16 @@ public sealed class AppShell : Shell
         Routing.RegisterRoute(nameof(TransactionFormPage), typeof(TransactionFormPage));
         Routing.RegisterRoute(nameof(ClientFormPage), typeof(ClientFormPage));
         Routing.RegisterRoute(nameof(QuoteFormPage), typeof(QuoteFormPage));
+
+        SizeChanged += (_, _) => UpdateFlyoutBehavior();
+        UpdateFlyoutBehavior();
+    }
+
+    private void UpdateFlyoutBehavior()
+    {
+        FlyoutBehavior = DeviceInfo.Idiom == DeviceIdiom.Desktop && Width >= LockedFlyoutMinimumWidth
+            ? FlyoutBehavior.Locked
+            : FlyoutBehavior.Flyout;
     }
 
     private static View BuildHeader()

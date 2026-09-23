@@ -2,7 +2,7 @@
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-  <Identity Name="MEIUtil" Publisher="CN=MEIUtil" Version="1.0.1.0" />
+  <Identity Name="MEIUtil" Publisher="CN=MEIUtil" Version="1.0.2.0" />
   <Properties>
     <DisplayName>Meu MEI</DisplayName>
     <PublisherDisplayName>Meu MEI</PublisherDisplayName>

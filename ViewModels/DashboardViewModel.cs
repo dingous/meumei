@@ -45,18 +45,28 @@ public partial class DashboardViewModel(
             var profile = await database.GetProfileAsync();
             var session = await authSession.GetAsync();
             var displayName = !string.IsNullOrWhiteSpace(session?.Name) ? session.Name : profile.OwnerName;
-            Greeting = string.IsNullOrWhiteSpace(displayName) ? "Olá!" : $"Olá, {displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]}!";
-            Subtitle = session is null ? "Seu MEI organizado em um só lugar." : "Sua conta Dingous está conectada e protegida.";
+            Greeting = string.IsNullOrWhiteSpace(displayName)
+                ? "Olá!"
+                : $"Olá, {displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]}!";
+            Subtitle = session is null
+                ? "Seu MEI organizado em um só lugar."
+                : "Sua conta Dingous está conectada e protegida.";
 
             var monthStart = new DateTime(today.Year, today.Month, 1);
             var monthItems = await database.GetTransactionsAsync(monthStart, monthStart.AddMonths(1));
-            MonthRevenue = monthItems.Where(x => x.Type == TransactionTypes.Revenue).Sum(x => x.Amount);
-            MonthExpenses = monthItems.Where(x => x.Type == TransactionTypes.Expense).Sum(x => x.Amount);
+            MonthRevenue = monthItems
+                .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
+                .Sum(x => x.Amount);
+            MonthExpenses = monthItems
+                .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
+                .Sum(x => x.Amount);
             MonthBalance = MonthRevenue - MonthExpenses;
 
             var yearStart = new DateTime(today.Year, 1, 1);
             var yearItems = await database.GetTransactionsAsync(yearStart, yearStart.AddYears(1));
-            AnnualRevenue = yearItems.Where(x => x.Type == TransactionTypes.Revenue).Sum(x => x.Amount);
+            AnnualRevenue = yearItems
+                .Where(x => x.Type == TransactionTypes.Revenue)
+                .Sum(x => x.Amount);
             AnnualLimit = rules.GetApplicableAnnualLimit(profile, today);
             LimitRemaining = Math.Max(0, AnnualLimit - AnnualRevenue);
             LimitPercent = AnnualLimit <= 0 ? 0 : Math.Round(AnnualRevenue / AnnualLimit * 100m, 1);
@@ -67,11 +77,15 @@ public partial class DashboardViewModel(
             NextObligation = "Nenhuma pendência encontrada";
             NextObligationDate = "Você está em dia no calendário local.";
             var obligations = await database.GetObligationsAsync();
-            var next = obligations.Where(x => !x.IsDone).OrderBy(x => x.DueDate).FirstOrDefault();
+            var next = obligations
+                .Where(x => !x.IsDone && rules.IsObligationApplicable(x, profile))
+                .OrderBy(x => x.DueDate)
+                .FirstOrDefault();
+
             if (next is not null)
             {
                 NextObligation = $"{next.Title} • {next.Reference}";
-                NextObligationDate = next.DueDate < today
+                NextObligationDate = next.DueDate.Date < today
                     ? $"Vencido em {next.DueDate:dd/MM/yyyy}"
                     : $"Vence em {next.DueDate:dd/MM/yyyy}";
             }
@@ -81,16 +95,25 @@ public partial class DashboardViewModel(
                 ? $"1º ano grátis • {status.DaysRemaining} dias restantes"
                 : "Período gratuito encerrado • seus dados continuam disponíveis";
         }
-        catch { ErrorMessage = "Não foi possível atualizar o painel agora. Seus dados locais continuam preservados."; }
-        finally { IsBusy = false; }
+        catch
+        {
+            ErrorMessage = "Não foi possível atualizar o painel agora. Seus dados locais continuam preservados.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
-    private Task NewRevenueAsync() => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
+    private Task NewRevenueAsync()
+        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
 
     [RelayCommand]
-    private Task NewExpenseAsync() => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
+    private Task NewExpenseAsync()
+        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
 
     [RelayCommand]
-    private Task NewQuoteAsync() => Shell.Current.GoToAsync(nameof(QuoteFormPage));
+    private Task NewQuoteAsync()
+        => Shell.Current.GoToAsync(nameof(QuoteFormPage));
 }
