@@ -15,11 +15,13 @@ public partial class ClientFormViewModel(DatabaseService database) : ObservableO
     [ObservableProperty] private string notes = string.Empty;
     [ObservableProperty] private string errorMessage = string.Empty;
     [ObservableProperty] private bool isBusy;
+    [ObservableProperty] private bool isSaved;
 
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (IsBusy) return;
+        if (IsBusy || IsSaved)
+            return;
 
         ErrorMessage = string.Empty;
         Name = Name.Trim();
@@ -56,15 +58,25 @@ public partial class ClientFormViewModel(DatabaseService database) : ObservableO
                 Email = Email,
                 Notes = Notes.Trim()
             });
-            await Shell.Current.GoToAsync("..");
+            IsSaved = true;
         }
         catch
         {
             ErrorMessage = "Não foi possível salvar o cliente. Tente novamente.";
+            return;
         }
         finally
         {
             IsBusy = false;
+        }
+
+        try
+        {
+            await Shell.Current.GoToAsync("..");
+        }
+        catch
+        {
+            ErrorMessage = "Cliente salvo. Não foi possível voltar automaticamente; use o botão Voltar.";
         }
     }
 }

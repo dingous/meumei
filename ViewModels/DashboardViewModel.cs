@@ -36,46 +36,62 @@ public partial class DashboardViewModel(
     private async Task LoadAsync()
     {
         if (IsBusy) return;
+
         IsBusy = true;
         ErrorMessage = string.Empty;
+
         try
         {
             await seed.EnsureAsync();
+
             var today = DateTime.Today;
             var profile = await database.GetProfileAsync();
             var session = await authSession.GetAsync();
-            var displayName = !string.IsNullOrWhiteSpace(session?.Name) ? session.Name : profile.OwnerName;
+            var displayName = !string.IsNullOrWhiteSpace(session?.Name)
+                ? session.Name
+                : profile.OwnerName;
+
             Greeting = string.IsNullOrWhiteSpace(displayName)
                 ? "Olá!"
                 : $"Olá, {displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]}!";
+
             Subtitle = session is null
                 ? "Seu MEI organizado em um só lugar."
                 : "Sua conta Dingous está conectada e protegida.";
 
             var monthStart = new DateTime(today.Year, today.Month, 1);
             var monthItems = await database.GetTransactionsAsync(monthStart, monthStart.AddMonths(1));
+
             MonthRevenue = monthItems
                 .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
                 .Sum(x => x.Amount);
+
             MonthExpenses = monthItems
                 .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
                 .Sum(x => x.Amount);
+
             MonthBalance = MonthRevenue - MonthExpenses;
 
             var yearStart = new DateTime(today.Year, 1, 1);
             var yearItems = await database.GetTransactionsAsync(yearStart, yearStart.AddYears(1));
+
             AnnualRevenue = yearItems
-                .Where(x => x.Type == TransactionTypes.Revenue)
+                .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
                 .Sum(x => x.Amount);
+
             AnnualLimit = rules.GetApplicableAnnualLimit(profile, today);
             LimitRemaining = Math.Max(0, AnnualLimit - AnnualRevenue);
-            LimitPercent = AnnualLimit <= 0 ? 0 : Math.Round(AnnualRevenue / AnnualLimit * 100m, 1);
+            LimitPercent = AnnualLimit <= 0
+                ? 0
+                : Math.Round(AnnualRevenue / AnnualLimit * 100m, 1);
+
             LimitProgress = Math.Clamp((double)(LimitPercent / 100m), 0d, 1d);
             AnnualProjection = rules.GetProjection(AnnualRevenue, profile, today);
             RiskText = rules.GetRiskText(LimitPercent);
 
             NextObligation = "Nenhuma pendência encontrada";
             NextObligationDate = "Você está em dia no calendário local.";
+
             var obligations = await database.GetObligationsAsync();
             var next = obligations
                 .Where(x => !x.IsDone && rules.IsObligationApplicable(x, profile))

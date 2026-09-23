@@ -5,7 +5,11 @@ namespace MEIUtil.Services.Auth;
 
 public sealed class DingousAuthApi(HttpClient httpClient)
 {
-    public async Task<AuthSession> ExchangeGoogleTokenAsync(string idToken, CancellationToken cancellationToken = default)
+    private const long IdentityOnlyCompanyId = 0;
+
+    public async Task<AuthSession> ExchangeGoogleTokenAsync(
+        string idToken,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(idToken))
             throw new InvalidOperationException("O Google não retornou uma credencial válida.");
@@ -14,7 +18,7 @@ public sealed class DingousAuthApi(HttpClient httpClient)
         {
             using var response = await httpClient.PostAsJsonAsync(
                 "api/auth/google-game",
-                new GoogleGameLoginRequest(idToken, 1),
+                new GoogleGameLoginRequest(idToken, IdentityOnlyCompanyId),
                 cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -23,11 +27,14 @@ public sealed class DingousAuthApi(HttpClient httpClient)
                 throw new InvalidOperationException(detail);
             }
 
-            var payload = await response.Content.ReadFromJsonAsync<GoogleGameLoginResponse>(cancellationToken: cancellationToken)
-                ?? throw new InvalidOperationException("O DingousChatTrade retornou uma resposta de login vazia.");
+            var payload = await response.Content.ReadFromJsonAsync<GoogleGameLoginResponse>(
+                cancellationToken: cancellationToken)
+                ?? throw new InvalidOperationException(
+                    "O DingousChatTrade retornou uma resposta de login vazia.");
 
             if (string.IsNullOrWhiteSpace(payload.AccessToken))
-                throw new InvalidOperationException("O DingousChatTrade não retornou um token de acesso válido.");
+                throw new InvalidOperationException(
+                    "O DingousChatTrade não retornou um token de acesso válido.");
 
             return new AuthSession(
                 payload.AccessToken,
@@ -38,15 +45,19 @@ public sealed class DingousAuthApi(HttpClient httpClient)
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new InvalidOperationException("O DingousChatTrade demorou demais para responder. Tente novamente.");
+            throw new InvalidOperationException(
+                "O DingousChatTrade demorou demais para responder. Tente novamente.");
         }
         catch (HttpRequestException)
         {
-            throw new InvalidOperationException("Não foi possível conectar ao DingousChatTrade. Verifique sua internet.");
+            throw new InvalidOperationException(
+                "Não foi possível conectar ao DingousChatTrade. Verifique sua internet.");
         }
     }
 
-    private static async Task<string> ReadSafeErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private static async Task<string> ReadSafeErrorAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -56,9 +67,11 @@ public sealed class DingousAuthApi(HttpClient httpClient)
 
             using var json = JsonDocument.Parse(raw);
             var root = json.RootElement;
+
             foreach (var key in new[] { "error", "detail", "title" })
             {
-                if (root.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String)
+                if (root.TryGetProperty(key, out var value) &&
+                    value.ValueKind == JsonValueKind.String)
                 {
                     var message = value.GetString();
                     if (!string.IsNullOrWhiteSpace(message))
@@ -74,6 +87,7 @@ public sealed class DingousAuthApi(HttpClient httpClient)
     }
 
     private sealed record GoogleGameLoginRequest(string IdToken, long CompanyId);
+
     private sealed record GoogleGameLoginResponse(
         string AccessToken,
         DateTimeOffset ExpiresAt,

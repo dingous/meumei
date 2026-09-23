@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MEIUtil.Views.QuoteFormPage" Title="Novo orçamento">
+<ContentPage SafeAreaEdges="All" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MEIUtil.Views.QuoteFormPage" Title="Novo orçamento">
 <ScrollView><VerticalStackLayout Padding="20" Spacing="16" MaximumWidthRequest="760" HorizontalOptions="Fill">
 <VerticalStackLayout Spacing="3"><Label Text="PROPOSTA" Style="{StaticResource Eyebrow}"/><Label Text="Novo orçamento" Style="{StaticResource TitleLabel}"/><Label Text="Preencha os dados essenciais e compartilhe depois." Style="{StaticResource Caption}"/></VerticalStackLayout>
 <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="11">
@@ -7,5 +7,5 @@
 <Label Text="Descrição" Style="{StaticResource Caption}"/><Editor Text="{Binding Description}" MinimumHeightRequest="130" MaxLength="500"/>
 <Label Text="Valor total" Style="{StaticResource Caption}"/><Entry Text="{Binding Total}" Keyboard="Numeric" ReturnType="Next"/>
 <Label Text="Válido até" Style="{StaticResource Caption}"/><DatePicker Date="{Binding ValidUntil}"/>
-<Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}"/><ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/><Button Text="Salvar orçamento" Command="{Binding SaveCommand}"/>
+<Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}"/><ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/><Button Text="Salvar orçamento" Command="{Binding SaveCommand}"><Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsSaved}" Value="True"><Setter Property="Text" Value="Salvo"/><Setter Property="IsEnabled" Value="False"/><Setter Property="Opacity" Value="0.72"/></DataTrigger></Button.Triggers></Button>
 </VerticalStackLayout></Border></VerticalStackLayout></ScrollView></ContentPage>

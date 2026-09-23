@@ -10,6 +10,7 @@ namespace MEIUtil.ViewModels;
 public partial class TransactionsViewModel(DatabaseService database) : ObservableObject
 {
     public ObservableCollection<Transaction> Items { get; } = [];
+
     [ObservableProperty] private decimal totalRevenue;
     [ObservableProperty] private decimal totalExpenses;
     [ObservableProperty] private decimal balance;
@@ -19,29 +20,14 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
     [RelayCommand]
     private async Task LoadAsync()
     {
-        if (IsBusy) return;
-        await ReloadAsync();
-    }
+        if (IsBusy)
+            return;
 
-    private async Task ReloadAsync()
-    {
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
         {
-            var start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-            var data = await database.GetTransactionsAsync(start, start.AddMonths(1));
-            Items.Clear();
-            foreach (var item in data)
-                Items.Add(item);
-
-            TotalRevenue = data
-                .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
-                .Sum(x => x.Amount);
-            TotalExpenses = data
-                .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
-                .Sum(x => x.Amount);
-            Balance = TotalRevenue - TotalExpenses;
+            await LoadCoreAsync();
         }
         catch
         {
@@ -53,33 +39,69 @@ public partial class TransactionsViewModel(DatabaseService database) : Observabl
         }
     }
 
+    private async Task LoadCoreAsync()
+    {
+        var start = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var data = await database.GetTransactionsAsync(start, start.AddMonths(1));
+
+        Items.Clear();
+        foreach (var item in data)
+            Items.Add(item);
+
+        TotalRevenue = data
+            .Where(x => x.Type == TransactionTypes.Revenue && x.IsPaid)
+            .Sum(x => x.Amount);
+
+        TotalExpenses = data
+            .Where(x => x.Type == TransactionTypes.Expense && x.IsPaid)
+            .Sum(x => x.Amount);
+
+        Balance = TotalRevenue - TotalExpenses;
+    }
+
     [RelayCommand]
     private Task NewRevenueAsync()
-        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
+        => Shell.Current.GoToAsync(
+            $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
 
     [RelayCommand]
     private Task NewExpenseAsync()
-        => Shell.Current.GoToAsync($"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
+        => Shell.Current.GoToAsync(
+            $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
 
     [RelayCommand]
     private async Task DeleteAsync(Transaction? item)
     {
-        if (item is null || IsBusy) return;
+        if (item is null || IsBusy)
+            return;
+
+        var shell = Shell.Current;
+        if (shell is not null)
+        {
+            var confirmed = await shell.DisplayAlertAsync(
+                "Excluir lançamento",
+                $"Deseja excluir “{item.Description}” no valor de {item.Amount:C2}?",
+                "Excluir",
+                "Cancelar");
+
+            if (!confirmed)
+                return;
+        }
 
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
         {
             await database.DeleteTransactionAsync(item);
+            await LoadCoreAsync();
         }
         catch
         {
             ErrorMessage = "Não foi possível excluir este lançamento.";
-            IsBusy = false;
-            return;
         }
-
-        IsBusy = false;
-        await ReloadAsync();
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }
