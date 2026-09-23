@@ -49,102 +49,123 @@ public partial class DashboardViewModel(
             var profile = await database.GetProfileAsync();
             var session = await authSession.GetAsync();
 
-            var displayName = !string.IsNullOrWhiteSpace(session?.Name)
-                ? session.Name
-                : profile.OwnerName;
+            var displayName =
+                !string.IsNullOrWhiteSpace(session?.Name)
+                    ? session.Name
+                    : profile.OwnerName;
 
-            Greeting = string.IsNullOrWhiteSpace(displayName)
-                ? "Olá!"
-                : $"Olá, {displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]}!";
+            Greeting =
+                string.IsNullOrWhiteSpace(displayName)
+                    ? "Olá!"
+                    : $"Olá, {displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0]}!";
 
-            Subtitle = session is null
-                ? "Seu MEI organizado em um só lugar."
-                : "Sua conta Dingous está conectada e protegida.";
+            Subtitle =
+                session is null
+                    ? "Seu MEI organizado em um só lugar."
+                    : "Sua conta Dingous está conectada e protegida.";
 
-            var openedAt = profile.OpenedAt.Date;
-            var effectiveOpenedAt = openedAt <= today
-                ? openedAt
-                : today.AddDays(1);
+            var monthStart =
+                new DateTime(
+                    today.Year,
+                    today.Month,
+                    1);
 
-            var monthStart = new DateTime(
-                today.Year,
-                today.Month,
-                1);
-
-            var monthItems = await database.GetTransactionsAsync(
-                monthStart,
-                monthStart.AddMonths(1));
+            var monthItems =
+                await database.GetTransactionsAsync(
+                    monthStart,
+                    monthStart.AddMonths(1));
 
             MonthRevenue = monthItems
                 .Where(x =>
                     x.Type == TransactionTypes.Revenue &&
-                    x.IsPaid &&
-                    x.Date.Date >= effectiveOpenedAt)
+                    x.IsPaid)
                 .Sum(x => x.Amount);
 
             MonthExpenses = monthItems
                 .Where(x =>
                     x.Type == TransactionTypes.Expense &&
-                    x.IsPaid &&
-                    x.Date.Date >= effectiveOpenedAt)
+                    x.IsPaid)
                 .Sum(x => x.Amount);
 
-            MonthBalance = MonthRevenue - MonthExpenses;
+            MonthBalance =
+                MonthRevenue - MonthExpenses;
 
-            var yearStart = new DateTime(today.Year, 1, 1);
+            var yearStart =
+                new DateTime(
+                    today.Year,
+                    1,
+                    1);
 
-            var yearItems = await database.GetTransactionsAsync(
-                yearStart,
-                yearStart.AddYears(1));
+            var yearItems =
+                await database.GetTransactionsAsync(
+                    yearStart,
+                    yearStart.AddYears(1));
 
-            var revenueStart = effectiveOpenedAt > today
-                ? effectiveOpenedAt
-                : openedAt.Year == today.Year
-                    ? effectiveOpenedAt
+            var revenueStart =
+                profile.OpenedAt.Year == today.Year
+                    ? profile.OpenedAt.Date
                     : yearStart;
 
             AnnualRevenue = yearItems
                 .Where(x =>
                     x.Type == TransactionTypes.Revenue &&
-                    x.IsPaid &&
                     x.Date.Date >= revenueStart)
                 .Sum(x => x.Amount);
 
-            AnnualLimit = rules.GetApplicableAnnualLimit(
-                profile,
-                today);
+            AnnualLimit =
+                rules.GetApplicableAnnualLimit(
+                    profile,
+                    today);
 
-            LimitRemaining = Math.Max(
-                0,
-                AnnualLimit - AnnualRevenue);
+            LimitRemaining =
+                Math.Max(
+                    0,
+                    AnnualLimit - AnnualRevenue);
 
-            LimitPercent = AnnualLimit <= 0
-                ? 0
-                : Math.Round(
-                    AnnualRevenue / AnnualLimit * 100m,
-                    1);
+            LimitPercent =
+                AnnualLimit <= 0
+                    ? 0
+                    : Math.Round(
+                        AnnualRevenue /
+                        AnnualLimit *
+                        100m,
+                        1);
 
-            LimitProgress = Math.Clamp(
-                (double)(LimitPercent / 100m),
-                0d,
-                1d);
+            LimitProgress =
+                Math.Clamp(
+                    (double)(
+                        LimitPercent /
+                        100m),
+                    0d,
+                    1d);
 
-            AnnualProjection = rules.GetProjection(
-                AnnualRevenue,
-                profile,
-                today);
+            AnnualProjection =
+                rules.GetProjection(
+                    AnnualRevenue,
+                    profile,
+                    today);
 
-            RiskText = rules.GetRiskText(LimitPercent);
+            RiskText =
+                AnnualLimit <= 0
+                    ? "Revise a data de abertura"
+                    : rules.GetRiskText(
+                        LimitPercent);
 
-            NextObligation = "Nenhuma pendência encontrada";
-            NextObligationDate = "Você está em dia no calendário local.";
+            NextObligation =
+                "Nenhuma pendência encontrada";
 
-            var obligations = await database.GetObligationsAsync();
+            NextObligationDate =
+                "Você está em dia no calendário local.";
+
+            var obligations =
+                await database.GetObligationsAsync();
 
             var next = obligations
                 .Where(x =>
                     !x.IsDone &&
-                    rules.IsObligationApplicable(x, profile))
+                    rules.IsObligationApplicable(
+                        x,
+                        profile))
                 .OrderBy(x => x.DueDate)
                 .FirstOrDefault();
 
@@ -153,16 +174,19 @@ public partial class DashboardViewModel(
                 NextObligation =
                     $"{next.Title} • {next.Reference}";
 
-                NextObligationDate = next.DueDate.Date < today
-                    ? $"Data-base {next.DueDate:dd/MM/yyyy} já passou • confirme o prazo oficial"
-                    : $"Data-base: {next.DueDate:dd/MM/yyyy}";
+                NextObligationDate =
+                    next.DueDate.Date < today
+                        ? $"Data-base {next.DueDate:dd/MM/yyyy} já passou • confirme o prazo oficial"
+                        : $"Data-base: {next.DueDate:dd/MM/yyyy}";
             }
 
-            var status = trial.GetStatus();
+            var status =
+                trial.GetStatus();
 
-            TrialText = status.IsActive
-                ? $"1º ano grátis • {status.DaysRemaining} dias restantes"
-                : "Período gratuito encerrado • seus dados continuam disponíveis";
+            TrialText =
+                status.IsActive
+                    ? $"1º ano grátis • {status.DaysRemaining} dias restantes"
+                    : "Período gratuito encerrado • seus dados continuam disponíveis";
         }
         catch
         {

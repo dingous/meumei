@@ -1,90 +1,56 @@
 # Meu MEI — .NET MAUI
 
-Aplicativo de utilidades para MEI em .NET MAUI, com Android e Windows na mesma base C#/XAML. A versão atual prioriza confiabilidade, privacidade, responsividade e custo operacional mínimo.
+Aplicativo de utilidades para MEI em .NET MAUI, com Android e Windows na mesma base C#/XAML.
 
-## Versão 1.0.5
+## Versão 1.0.6
 
-Esta é uma revisão de hardening e acabamento. Não cria módulos de negócio novos.
+Esta revisão mantém o mesmo escopo funcional e foca em correção, robustez, responsividade e acabamento.
 
 ### Correções desta revisão
 
-- logout Google no Android agora limpa também o estado do Credential Manager, além do JWT do Dingous;
-- novo cadastro deixa de assumir abertura em 1º de janeiro e usa a data atual como default conservador;
-- cálculo mensal ignora lançamentos anteriores à data de abertura do MEI;
-- estado corrompido com data de abertura futura deixa de contaminar os totais do dashboard;
-- transações, clientes, orçamentos e obrigações ganharam ordenação determinística para evitar troca visual de posição em itens empatados;
-- validação do CNPJ alfanumérico deixou de rejeitar indevidamente bases repetidas que tenham dígitos verificadores válidos;
-- campos de texto passam a exibir botão de limpar durante a edição;
-- botões desabilitados ganharam estado visual mais claro;
-- versão avançada para 1.0.5 / build 6.
+- faturamento anual deixa de depender do status Recebido: vendas e serviços a prazo entram no limite na data da operação;
+- caixa mensal continua separado e considera apenas entradas recebidas e saídas pagas;
+- mensagem de risco agora diferencia quando o limite já foi ultrapassado;
+- nova instalação também cria o lembrete da DASN referente ao ano anterior quando aplicável;
+- datas de obrigações são apresentadas explicitamente como data-base, evitando afirmar vencimento ajustado por feriado/prorrogação;
+- clientes ganharam iniciais e deixam de reservar linhas vazias para telefone/e-mail ausentes;
+- ações de Clientes e Orçamentos quebram melhor em telas estreitas;
+- versão avançada para 1.0.6 / build 7.
 
-### Mantido das revisões anteriores
+### Mantido
 
-- suporte ao CNPJ alfanumérico vigente em 2026;
-- validação local de CPF e CNPJ;
-- receita anual baseada no que foi efetivamente recebido;
-- obrigações respeitando a data de abertura;
-- proteção contra salvamentos duplicados e exclusão acidental;
-- safe areas do .NET MAUI 10;
-- SQLite protegido contra inicialização concorrente;
-- login Google nativo via Credential Manager;
+- CNPJ alfanumérico;
+- validação local de CPF/CNPJ;
+- Google nativo Android via Credential Manager;
+- logout limpando Credential Manager;
 - sessão Dingous em SecureStorage;
+- SQLite local;
+- primeiro ano grátis;
+- proteção contra gravação duplicada e exclusão acidental;
+- safe areas MAUI 10;
 - Auto Backup Android desativado;
-- cards, listas e formulários responsivos em mobile e desktop;
-- flyout desktop adaptável para janelas estreitas;
-- manifest Windows com resources, tiles e splash.
+- flyout responsivo no desktop;
+- nenhum CI/CD ou AppSettings alterado.
 
-Não foram adicionados CI/CD, AppSettings, serviços pagos ou infraestrutura nova.
+## Regra de faturamento
 
-## Stack
-
-- .NET 10 + .NET MAUI
-- CommunityToolkit.Mvvm 8.4.2
-- sqlite-net-pcl 1.11.285
-- Xamarin.AndroidX.Credentials 1.6.0.1
-- Xamarin.AndroidX.Credentials.PlayServicesAuth 1.6.0.2
-- Xamarin.Google.Android.Libraries.Identity.GoogleId 1.1.0.16
-- Shell Navigation
-- SecureStorage
+O indicador do limite anual usa a receita bruta das vendas e serviços registrados no período. O status Recebido/Pago é usado somente para o caixa financeiro. Assim, uma venda a prazo conta no faturamento na data da venda, mesmo que ainda esteja a receber.
 
 ## Backend
-
-O backend é o **DingousChatTrade**.
 
 O login Android usa:
 
 `POST https://dingous.com.br/api/auth/google-game`
 
-O app obtém o ID Token pelo Google nativo, envia esse token ao DingousChatTrade e guarda o JWT retornado no SecureStorage. Nenhum ClientSecret Google é incluído no aplicativo.
+A autenticação do Meu MEI usa escopo neutro `CompanyId = 0`, sem vincular o usuário a um tenant comercial fixo.
 
-Para o Meu MEI, a autenticação usa `CompanyId = 0`, evitando vincular todos os usuários a um tenant comercial fixo.
+## Persistência
 
-## Persistência e privacidade
-
-Os dados operacionais permanecem no SQLite local:
+SQLite local:
 
 `FileSystem.AppDataDirectory/meiutil.db3`
 
-Isso inclui lançamentos, clientes, orçamentos, perfil e lembretes.
-
-No Android, o Auto Backup permanece desativado.
-
-## Google nativo — checklist de produção
-
-Package id Android:
-
-`br.com.dingous.meumei`
-
-Antes da publicação:
-
-1. mantenha esse package id cadastrado no projeto Google;
-2. cadastre SHA-1/SHA-256 da chave de assinatura de produção;
-3. confirme que o Server/Web Client ID usado pelo app corresponde a um audience aceito pelo DingousChatTrade;
-4. valide login e logout usando o AAB/APK assinado.
-
 ## Build local
-
-Com .NET 10 e workload MAUI instalados:
 
 ```bash
 dotnet restore
@@ -92,10 +58,6 @@ dotnet build -c Release -f net10.0-android
 dotnet build -c Release -f net10.0-windows10.0.19041.0
 ```
 
-## Primeiro ano grátis
+## Produção
 
-O período de 365 dias continua local em `Preferences`, conforme o escopo original. Reinstalar ou limpar os dados pode reiniciar esse período. Transferir essa licença para o backend seria alteração de regra de produto e não faz parte deste hardening.
-
-## Obrigações
-
-A tela de obrigações é um lembrete. Guia, valor, feriados e eventuais prorrogações devem ser confirmados no canal oficial antes do pagamento.
+Antes de publicar Android, valide o AAB assinado em aparelho real, inclusive login e logout Google com SHA-1/SHA-256 de produção.

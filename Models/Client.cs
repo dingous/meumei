@@ -21,4 +21,37 @@ public sealed class Client
 
     [MaxLength(220)]
     public string Notes { get; set; } = string.Empty;
+
+    [Ignore]
+    public bool HasPhone =>
+        !string.IsNullOrWhiteSpace(Phone);
+
+    [Ignore]
+    public bool HasEmail =>
+        !string.IsNullOrWhiteSpace(Email);
+
+    [Ignore]
+    public string Initials
+    {
+        get
+        {
+            var parts = (Name ?? string.Empty)
+                .Split(
+                    ' ',
+                    StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 0)
+                return "ME";
+
+            if (parts.Length == 1)
+            {
+                return parts[0]
+                    [..Math.Min(2, parts[0].Length)]
+                    .ToUpperInvariant();
+            }
+
+            return $"{parts[0][0]}{parts[^1][0]}"
+                .ToUpperInvariant();
+        }
+    }
 }

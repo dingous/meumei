@@ -14,7 +14,7 @@
 <Label Text="{Binding StatusText}" Style="{StaticResource PillText}"><Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding StatusText}" Value="Revisar prazo"><Setter Property="TextColor" Value="{StaticResource Danger}"/></DataTrigger><DataTrigger TargetType="Label" Binding="{Binding IsDone}" Value="True"><Setter Property="TextColor" Value="{StaticResource Success}"/></DataTrigger></Label.Triggers></Label>
 </Border>
 </Grid>
-<Label Text="{Binding DueDate, StringFormat='Lembrete: {0:dd/MM/yyyy}'}" Style="{StaticResource Caption}"/>
+<Label Text="{Binding DueDate, StringFormat='Data-base: {0:dd/MM/yyyy}'}" Style="{StaticResource Caption}"/>
 <Button Text="{Binding ActionText}" Style="{StaticResource SecondaryButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleDoneCommand}" CommandParameter="{Binding .}"/>
 </VerticalStackLayout></Border></DataTemplate></CollectionView.ItemTemplate>
 </CollectionView>
