@@ -10,7 +10,13 @@ public sealed class AuthSessionService
     public async Task<AuthSession?> GetAsync()
     {
         if (_cached is not null)
-            return _cached.IsExpired ? null : _cached;
+        {
+            if (!_cached.IsExpired)
+                return _cached;
+
+            Clear();
+            return null;
+        }
 
         try
         {
@@ -21,7 +27,7 @@ public sealed class AuthSessionService
             var session = JsonSerializer.Deserialize<AuthSession>(raw);
             if (session is null || session.IsExpired)
             {
-                SecureStorage.Default.Remove(SessionKey);
+                Clear();
                 return null;
             }
 
@@ -30,22 +36,31 @@ public sealed class AuthSessionService
         }
         catch
         {
-            try { SecureStorage.Default.Remove(SessionKey); } catch { }
-            _cached = null;
+            Clear();
             return null;
         }
     }
 
     public async Task SaveAsync(AuthSession session)
     {
-        _cached = session;
+        if (session.IsExpired)
+            throw new InvalidOperationException("Não é possível salvar uma sessão já expirada.");
+
         await SecureStorage.Default.SetAsync(SessionKey, JsonSerializer.Serialize(session));
+        _cached = session;
     }
 
     public void Clear()
     {
         _cached = null;
-        SecureStorage.Default.Remove(SessionKey);
+        try
+        {
+            SecureStorage.Default.Remove(SessionKey);
+        }
+        catch
+        {
+            // O cache em memória já foi invalidado. Falhas do cofre do SO não devem derrubar a UI.
+        }
     }
 }
 

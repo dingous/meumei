@@ -31,4 +31,9 @@ public sealed class Transaction
 
     [Ignore]
     public string SignedAmount => $"{(Type == TransactionTypes.Expense ? "-" : "+")} {Amount:C2}";
+
+    [Ignore]
+    public string PaymentStatusText => IsPaid
+        ? Type == TransactionTypes.Expense ? "Pago" : "Recebido"
+        : Type == TransactionTypes.Expense ? "A pagar" : "A receber";
 }

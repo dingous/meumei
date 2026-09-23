@@ -1,8 +1,8 @@
 # Meu MEI — .NET MAUI
 
-Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base C#/XAML. O foco da versão 1.0 é simplicidade, operação offline e custo operacional mínimo.
+Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base C#/XAML. O foco é simplicidade, operação offline e custo operacional mínimo.
 
-## Versão 1.0.0
+## Versão 1.0.1
 
 - Dashboard de receitas, despesas, saldo e projeção anual.
 - Acompanhamento do limite anual e limite proporcional para abertura durante o ano.
@@ -17,6 +17,22 @@ Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base
 - Validação do ID Token e emissão da sessão pelo DingousChatTrade.
 - Interface responsiva para mobile e desktop.
 
+## Hardening da 1.0.1
+
+Esta revisão não cria novos módulos. Ela melhora o produto existente com:
+
+- inicialização SQLite protegida contra concorrência;
+- limpeza segura de sessão expirada;
+- mensagens de erro de conexão/autenticação mais claras;
+- validação de CNPJ, valores e datas;
+- dependências do Google Sign-In explicitadas para builds Android reproduzíveis;
+- cards e formulários que se reorganizam melhor em telas estreitas;
+- estados visuais para pagamentos e obrigações;
+- melhor densidade e leitura em desktop;
+- revisão visual de espaçamentos, hierarquia e estados vazios.
+
+Não foram adicionados CI/CD, AppSettings, serviços pagos ou infraestrutura nova.
+
 ## Stack
 
 - .NET 10 + .NET MAUI
@@ -28,7 +44,7 @@ Aplicativo de utilidades para MEI, preparado para Android e Windows com uma base
 
 ## Backend
 
-O backend do aplicativo é o **DingousChatTrade**. A versão 1.0 usa o endpoint já existente:
+O backend do aplicativo é o **DingousChatTrade**. A versão atual usa o endpoint já existente:
 
 `POST https://dingous.com.br/api/auth/google-game`
 
@@ -46,7 +62,7 @@ Antes de publicar:
 
 1. Cadastre esse package id no projeto Google usado pelo Dingous.
 2. Cadastre o SHA-1/SHA-256 da chave usada para assinar a versão de produção.
-3. Garanta que o OAuth Web/Server Client ID usado pelo app seja aceito como `audience` pelo endpoint `api/auth/google-game` do DingousChatTrade.
+3. Garanta que o OAuth Server/Web Client ID usado pelo app seja aceito como `audience` pelo endpoint `api/auth/google-game` do DingousChatTrade.
 4. Faça um login real usando o APK/AAB assinado para validar a configuração de produção.
 
 Nenhum `ClientSecret` deve ser incluído no projeto MAUI.
@@ -77,12 +93,8 @@ A inicialização é protegida contra chamadas concorrentes e o seed das obriga�
 
 ## Primeiro ano grátis
 
-`TrialService` inicia o período de 365 dias na primeira execução e mantém o estado em `Preferences`. Nesta versão o período continua local; reinstalar/limpar dados pode reiniciá-lo. Vincular a licença ao backend mudaria a regra de produto e não faz parte deste hardening da versão 1.0.
+`TrialService` inicia o período de 365 dias na primeira execução e mantém o estado em `Preferences`. Nesta versão o período continua local; reinstalar/limpar dados pode reiniciá-lo. Vincular a licença ao backend mudaria a regra de produto e não faz parte deste hardening.
 
 ## Obrigações
 
 A tela de obrigações é um **lembrete**, não um substituto do Portal do Simples Nacional/PGMEI. O usuário deve confirmar guia, valor, feriados e eventual prorrogação antes do pagamento.
-
-## Escopo deste hardening
-
-Foram priorizados robustez, validação, mensagens de erro, estados vazios, melhor aproveitamento de espaço em desktop, áreas de toque e leitura no mobile e consistência visual. Não foram adicionados CI/CD, AppSettings, serviços pagos nem funcionalidades de negócio fora do escopo existente.

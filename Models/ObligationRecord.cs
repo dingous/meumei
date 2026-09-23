@@ -21,4 +21,10 @@ public sealed class ObligationRecord
 
     public DateTime DueDate { get; set; }
     public bool IsDone { get; set; }
+
+    [Ignore]
+    public string StatusText => IsDone ? "Concluído" : DueDate.Date < DateTime.Today ? "Atrasado" : "Pendente";
+
+    [Ignore]
+    public string ActionText => IsDone ? "Reabrir" : "Marcar como concluído";
 }

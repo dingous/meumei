@@ -11,35 +11,36 @@ public sealed class DatabaseService
 
     private async Task<SQLiteAsyncConnection> GetDatabaseAsync()
     {
-        if (_database is null)
-        {
-            var path = Path.Combine(FileSystem.AppDataDirectory, "meiutil.db3");
-            _database = new SQLiteAsyncConnection(path,
-                SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache);
-        }
-
-        if (_initialized)
+        if (_initialized && _database is not null)
             return _database;
 
         await _initializeLock.WaitAsync();
         try
         {
-            if (_initialized)
-                return _database;
+            if (_database is null)
+            {
+                var path = Path.Combine(FileSystem.AppDataDirectory, "meiutil.db3");
+                _database = new SQLiteAsyncConnection(
+                    path,
+                    SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache);
+            }
 
-            await _database.CreateTableAsync<Transaction>();
-            await _database.CreateTableAsync<Client>();
-            await _database.CreateTableAsync<Quote>();
-            await _database.CreateTableAsync<ObligationRecord>();
-            await _database.CreateTableAsync<MeiProfile>();
-            _initialized = true;
+            if (!_initialized)
+            {
+                await _database.CreateTableAsync<Transaction>();
+                await _database.CreateTableAsync<Client>();
+                await _database.CreateTableAsync<Quote>();
+                await _database.CreateTableAsync<ObligationRecord>();
+                await _database.CreateTableAsync<MeiProfile>();
+                _initialized = true;
+            }
+
+            return _database;
         }
         finally
         {
             _initializeLock.Release();
         }
-
-        return _database;
     }
 
     public async Task<List<Transaction>> GetTransactionsAsync()
@@ -53,20 +54,31 @@ public sealed class DatabaseService
 
     public async Task SaveTransactionAsync(Transaction item)
     {
+        ArgumentNullException.ThrowIfNull(item);
         var db = await GetDatabaseAsync();
-        if (item.Id == 0) await db.InsertAsync(item); else await db.UpdateAsync(item);
+        if (item.Id == 0)
+            await db.InsertAsync(item);
+        else
+            await db.UpdateAsync(item);
     }
 
     public async Task DeleteTransactionAsync(Transaction item)
-        => await (await GetDatabaseAsync()).DeleteAsync(item);
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        await (await GetDatabaseAsync()).DeleteAsync(item);
+    }
 
     public async Task<List<Client>> GetClientsAsync()
         => await (await GetDatabaseAsync()).Table<Client>().OrderBy(x => x.Name).ToListAsync();
 
     public async Task SaveClientAsync(Client item)
     {
+        ArgumentNullException.ThrowIfNull(item);
         var db = await GetDatabaseAsync();
-        if (item.Id == 0) await db.InsertAsync(item); else await db.UpdateAsync(item);
+        if (item.Id == 0)
+            await db.InsertAsync(item);
+        else
+            await db.UpdateAsync(item);
     }
 
     public async Task<List<Quote>> GetQuotesAsync()
@@ -74,8 +86,12 @@ public sealed class DatabaseService
 
     public async Task SaveQuoteAsync(Quote item)
     {
+        ArgumentNullException.ThrowIfNull(item);
         var db = await GetDatabaseAsync();
-        if (item.Id == 0) await db.InsertAsync(item); else await db.UpdateAsync(item);
+        if (item.Id == 0)
+            await db.InsertAsync(item);
+        else
+            await db.UpdateAsync(item);
     }
 
     public async Task<List<ObligationRecord>> GetObligationsAsync()
@@ -83,15 +99,20 @@ public sealed class DatabaseService
 
     public async Task SaveObligationAsync(ObligationRecord item)
     {
+        ArgumentNullException.ThrowIfNull(item);
         var db = await GetDatabaseAsync();
-        if (item.Id == 0) await db.InsertAsync(item); else await db.UpdateAsync(item);
+        if (item.Id == 0)
+            await db.InsertAsync(item);
+        else
+            await db.UpdateAsync(item);
     }
 
     public async Task<MeiProfile> GetProfileAsync()
     {
         var db = await GetDatabaseAsync();
         var profile = await db.FindAsync<MeiProfile>(1);
-        if (profile is not null) return profile;
+        if (profile is not null)
+            return profile;
 
         profile = new MeiProfile();
         await db.InsertAsync(profile);
@@ -100,6 +121,7 @@ public sealed class DatabaseService
 
     public async Task SaveProfileAsync(MeiProfile profile)
     {
+        ArgumentNullException.ThrowIfNull(profile);
         profile.Id = 1;
         await (await GetDatabaseAsync()).InsertOrReplaceAsync(profile);
     }

@@ -41,8 +41,14 @@ public partial class SettingsViewModel(
             IsGoogleLoginAvailable = googleAuth.IsSupported;
             await RefreshSessionAsync();
         }
-        catch { ErrorMessage = "Não foi possível carregar seus dados agora."; }
-        finally { IsBusy = false; }
+        catch
+        {
+            ErrorMessage = "Não foi possível carregar seus dados agora.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -51,20 +57,43 @@ public partial class SettingsViewModel(
         if (IsBusy) return;
         Message = string.Empty;
         ErrorMessage = string.Empty;
-        if (Profile.OpenedAt.Date > DateTime.Today) { ErrorMessage = "A data de abertura não pode estar no futuro."; return; }
-        if (Profile.AnnualRevenueLimit <= 0) { ErrorMessage = "Informe um limite anual maior que zero."; return; }
+
+        Profile.OwnerName = Profile.OwnerName.Trim();
+        Profile.BusinessName = Profile.BusinessName.Trim();
+        Profile.Cnpj = OnlyDigits(Profile.Cnpj);
+
+        if (Profile.OpenedAt.Date > DateTime.Today)
+        {
+            ErrorMessage = "A data de abertura não pode estar no futuro.";
+            return;
+        }
+
+        if (Profile.AnnualRevenueLimit <= 0)
+        {
+            ErrorMessage = "Informe um limite anual maior que zero.";
+            return;
+        }
+
+        if (Profile.Cnpj.Length is > 0 and not 14)
+        {
+            ErrorMessage = "O CNPJ deve conter 14 números ou ficar em branco.";
+            return;
+        }
 
         IsBusy = true;
         try
         {
-            Profile.OwnerName = Profile.OwnerName.Trim();
-            Profile.BusinessName = Profile.BusinessName.Trim();
-            Profile.Cnpj = OnlyDigits(Profile.Cnpj);
             await database.SaveProfileAsync(Profile);
             Message = "Dados salvos com segurança.";
         }
-        catch { ErrorMessage = "Não foi possível salvar. Tente novamente."; }
-        finally { IsBusy = false; }
+        catch
+        {
+            ErrorMessage = "Não foi possível salvar. Tente novamente.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -74,6 +103,7 @@ public partial class SettingsViewModel(
         ErrorMessage = string.Empty;
         Message = string.Empty;
         IsBusy = true;
+
         try
         {
             var google = await googleAuth.SignInAsync();
@@ -81,23 +111,50 @@ public partial class SettingsViewModel(
             await authSession.SaveAsync(session);
             await RefreshSessionAsync();
             Message = "Conta Google conectada ao Dingous com sucesso.";
+
             if (string.IsNullOrWhiteSpace(Profile.OwnerName) && !string.IsNullOrWhiteSpace(session.Name))
             {
                 Profile.OwnerName = session.Name;
-                await database.SaveProfileAsync(Profile);
+                try
+                {
+                    await database.SaveProfileAsync(Profile);
+                }
+                catch
+                {
+                    // A autenticação já foi concluída; falha ao preencher nome não deve invalidar a sessão.
+                }
             }
         }
-        catch (OperationCanceledException) { Message = "Login cancelado."; }
-        catch (Exception ex) { ErrorMessage = FriendlyAuthError(ex.Message); }
-        finally { IsBusy = false; }
+        catch (OperationCanceledException)
+        {
+            Message = "Login cancelado.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = FriendlyAuthError(ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
     private async Task SignOutAsync()
     {
-        authSession.Clear();
-        await RefreshSessionAsync();
-        Message = "Você saiu da conta Dingous neste aparelho.";
+        if (IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            authSession.Clear();
+            await RefreshSessionAsync();
+            Message = "Você saiu da conta Dingous neste aparelho.";
+            ErrorMessage = string.Empty;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private async Task RefreshSessionAsync()
@@ -113,22 +170,33 @@ public partial class SettingsViewModel(
 
     private static string FriendlyAuthError(string raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return "Não foi possível entrar com o Google.";
-        if (raw.Contains("503", StringComparison.OrdinalIgnoreCase) || raw.Contains("não foi configurado", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(raw))
+            return "Não foi possível entrar com o Google.";
+
+        if (raw.Contains("503", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("não foi configurado", StringComparison.OrdinalIgnoreCase))
             return "O login Google ainda não está habilitado no DingousChatTrade de produção.";
-        if (raw.Contains("network", StringComparison.OrdinalIgnoreCase) || raw.Contains("conex", StringComparison.OrdinalIgnoreCase))
+
+        if (raw.Contains("network", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("internet", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("conectar", StringComparison.OrdinalIgnoreCase))
             return "Sem conexão com o DingousChatTrade. Verifique sua internet.";
+
         return raw.Length <= 180 ? raw : "Não foi possível concluir o login Google agora.";
     }
 
-    private static string OnlyDigits(string? value) => string.Concat((value ?? string.Empty).Where(char.IsDigit));
+    private static string OnlyDigits(string? value)
+        => string.Concat((value ?? string.Empty).Where(char.IsDigit));
 
     private static string Initials(string? name, string? email)
     {
         var source = string.IsNullOrWhiteSpace(name) ? email ?? string.Empty : name;
         var parts = source.Split(new[] { ' ', '@', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return "ME";
-        if (parts.Length == 1) return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
+        if (parts.Length == 0)
+            return "ME";
+        if (parts.Length == 1)
+            return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
+
         return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
     }
 }

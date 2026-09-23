@@ -1,1 +1,29 @@
-<?xml version="1.0" encoding="utf-8" ?><ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MEIUtil.Views.ObligationsPage" x:Name="Page" Title="Obrigações"><Grid Padding="20" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14" MaximumWidthRequest="1120" HorizontalOptions="Fill"><VerticalStackLayout><Label Text="ORGANIZAÇÃO" Style="{StaticResource Eyebrow}"/><Label Text="Obrigações" Style="{StaticResource TitleLabel}"/></VerticalStackLayout><Border Grid.Row="1" Style="{StaticResource Card}" BackgroundColor="{StaticResource WarningSoft}"><Label Text="Confirme guia, valor e vencimento no portal oficial antes do pagamento." Style="{StaticResource Caption}"/></Border><Label Grid.Row="2" Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}"/><CollectionView Grid.Row="3" ItemsSource="{Binding Items}"><CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource Card}" Margin="0,0,0,9"><Grid ColumnDefinitions="*,Auto"><VerticalStackLayout><Label Text="{Binding Title}" FontAttributes="Bold"/><Label Text="{Binding Reference, StringFormat='Referência: {0}'}" Style="{StaticResource Caption}"/><Label Text="{Binding DueDate, StringFormat='Lembrete: {0:dd/MM/yyyy}'}" Style="{StaticResource Caption}"/></VerticalStackLayout><Button Grid.Column="1" Text="Alterar" Style="{StaticResource SecondaryButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleDoneCommand}" CommandParameter="{Binding .}"/></Grid></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView></Grid></ContentPage>
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="MEIUtil.Views.ObligationsPage" x:Name="Page" Title="Obrigações">
+<Grid Padding="20" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14" MaximumWidthRequest="1120" HorizontalOptions="Fill">
+<VerticalStackLayout><Label Text="ORGANIZAÇÃO" Style="{StaticResource Eyebrow}"/><Label Text="Obrigações" Style="{StaticResource TitleLabel}"/><Label Text="Acompanhe os lembretes e marque o que já foi resolvido." Style="{StaticResource Caption}"/></VerticalStackLayout>
+<Border Grid.Row="1" Style="{StaticResource Card}" BackgroundColor="{StaticResource WarningSoft}"><Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Label Text="!" TextColor="{StaticResource Warning}" FontAttributes="Bold"/><Label Grid.Column="1" Text="Confirme guia, valor e vencimento no portal oficial antes do pagamento." Style="{StaticResource Caption}"/></Grid></Border>
+<Label Grid.Row="2" Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}"/>
+<CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None">
+<CollectionView.EmptyView><Label Text="Nenhuma obrigação cadastrada" HorizontalTextAlignment="Center" FontAttributes="Bold"/></CollectionView.EmptyView>
+<CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource Card}" Margin="0,0,0,9"><VerticalStackLayout Spacing="11">
+<Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+<VerticalStackLayout Spacing="2"><Label Text="{Binding Title}" FontAttributes="Bold"/><Label Text="{Binding Reference, StringFormat='Referência: {0}'}" Style="{StaticResource Caption}"/></VerticalStackLayout>
+<Border Grid.Column="1" Style="{StaticResource Pill}">
+<Border.Triggers>
+<DataTrigger TargetType="Border" Binding="{Binding StatusText}" Value="Atrasado"><Setter Property="BackgroundColor" Value="{StaticResource DangerSoft}"/></DataTrigger>
+<DataTrigger TargetType="Border" Binding="{Binding IsDone}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource SuccessSoft}"/></DataTrigger>
+</Border.Triggers>
+<Label Text="{Binding StatusText}" Style="{StaticResource PillText}">
+<Label.Triggers>
+<DataTrigger TargetType="Label" Binding="{Binding StatusText}" Value="Atrasado"><Setter Property="TextColor" Value="{StaticResource Danger}"/></DataTrigger>
+<DataTrigger TargetType="Label" Binding="{Binding IsDone}" Value="True"><Setter Property="TextColor" Value="{StaticResource Success}"/></DataTrigger>
+</Label.Triggers>
+</Label>
+</Border>
+</Grid>
+<Label Text="{Binding DueDate, StringFormat='Lembrete: {0:dd/MM/yyyy}'}" Style="{StaticResource Caption}"/>
+<Button Text="{Binding ActionText}" Style="{StaticResource SecondaryButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleDoneCommand}" CommandParameter="{Binding .}"/>
+</VerticalStackLayout></Border></DataTemplate></CollectionView.ItemTemplate>
+</CollectionView>
+</Grid></ContentPage>

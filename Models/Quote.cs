@@ -23,4 +23,9 @@ public sealed class Quote
 
     [Ignore]
     public string Number => $"#{Id:00000}";
+
+    [Ignore]
+    public string ValidityText => ValidUntil.Date < DateTime.Today
+        ? $"Expirou em {ValidUntil:dd/MM/yyyy}"
+        : $"Válido até {ValidUntil:dd/MM/yyyy}";
 }

@@ -7,29 +7,43 @@ public sealed class DingousAuthApi(HttpClient httpClient)
 {
     public async Task<AuthSession> ExchangeGoogleTokenAsync(string idToken, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PostAsJsonAsync(
-            "api/auth/google-game",
-            new GoogleGameLoginRequest(idToken, 1),
-            cancellationToken);
+        if (string.IsNullOrWhiteSpace(idToken))
+            throw new InvalidOperationException("O Google não retornou uma credencial válida.");
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var detail = await ReadSafeErrorAsync(response, cancellationToken);
-            throw new InvalidOperationException(detail);
+            using var response = await httpClient.PostAsJsonAsync(
+                "api/auth/google-game",
+                new GoogleGameLoginRequest(idToken, 1),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadSafeErrorAsync(response, cancellationToken);
+                throw new InvalidOperationException(detail);
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<GoogleGameLoginResponse>(cancellationToken: cancellationToken)
+                ?? throw new InvalidOperationException("O DingousChatTrade retornou uma resposta de login vazia.");
+
+            if (string.IsNullOrWhiteSpace(payload.AccessToken))
+                throw new InvalidOperationException("O DingousChatTrade não retornou um token de acesso válido.");
+
+            return new AuthSession(
+                payload.AccessToken,
+                payload.ExpiresAt,
+                payload.PlayerName ?? string.Empty,
+                payload.Email ?? string.Empty,
+                payload.PictureUrl ?? string.Empty);
         }
-
-        var payload = await response.Content.ReadFromJsonAsync<GoogleGameLoginResponse>(cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException("O DingousChatTrade retornou uma resposta de login vazia.");
-
-        if (string.IsNullOrWhiteSpace(payload.AccessToken))
-            throw new InvalidOperationException("O DingousChatTrade não retornou um token de acesso válido.");
-
-        return new AuthSession(
-            payload.AccessToken,
-            payload.ExpiresAt,
-            payload.PlayerName ?? string.Empty,
-            payload.Email ?? string.Empty,
-            payload.PictureUrl ?? string.Empty);
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new InvalidOperationException("O DingousChatTrade demorou demais para responder. Tente novamente.");
+        }
+        catch (HttpRequestException)
+        {
+            throw new InvalidOperationException("Não foi possível conectar ao DingousChatTrade. Verifique sua internet.");
+        }
     }
 
     private static async Task<string> ReadSafeErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
