@@ -19,6 +19,7 @@ public partial class DashboardViewModel(
     [ObservableProperty] private decimal monthRevenue;
     [ObservableProperty] private decimal monthExpenses;
     [ObservableProperty] private decimal monthBalance;
+    [ObservableProperty] private bool isMonthBalanceNegative;
     [ObservableProperty] private decimal annualRevenue;
     [ObservableProperty] private decimal annualLimit;
     [ObservableProperty] private decimal limitRemaining;
@@ -28,9 +29,12 @@ public partial class DashboardViewModel(
     [ObservableProperty] private string riskText = "Dentro do limite";
     [ObservableProperty] private string nextObligation = "Nenhuma pendência encontrada";
     [ObservableProperty] private string nextObligationDate = string.Empty;
+    [ObservableProperty] private string trialTitle = "Seu primeiro ano é por nossa conta";
     [ObservableProperty] private string trialText = string.Empty;
     [ObservableProperty] private string errorMessage = string.Empty;
     [ObservableProperty] private bool isBusy;
+
+    private bool _isNavigating;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -91,6 +95,9 @@ public partial class DashboardViewModel(
 
             MonthBalance =
                 MonthRevenue - MonthExpenses;
+
+            IsMonthBalanceNegative =
+                MonthBalance < 0;
 
             var yearStart =
                 new DateTime(
@@ -186,10 +193,15 @@ public partial class DashboardViewModel(
             var status =
                 trial.GetStatus();
 
+            TrialTitle =
+                status.IsActive
+                    ? "Seu primeiro ano é por nossa conta"
+                    : "Período gratuito encerrado";
+
             TrialText =
                 status.IsActive
                     ? $"1º ano grátis • {status.DaysRemaining} dias restantes"
-                    : "Período gratuito encerrado • seus dados continuam disponíveis";
+                    : "Seus dados locais continuam disponíveis.";
         }
         catch
         {
@@ -204,16 +216,42 @@ public partial class DashboardViewModel(
 
     [RelayCommand]
     private Task NewRevenueAsync()
-        => Shell.Current.GoToAsync(
+        => NavigateAsync(
             $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
 
     [RelayCommand]
     private Task NewExpenseAsync()
-        => Shell.Current.GoToAsync(
+        => NavigateAsync(
             $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
 
     [RelayCommand]
     private Task NewQuoteAsync()
-        => Shell.Current.GoToAsync(
+        => NavigateAsync(
             nameof(QuoteFormPage));
+
+    private async Task NavigateAsync(string route)
+    {
+        if (_isNavigating)
+            return;
+
+        _isNavigating = true;
+
+        try
+        {
+            var shell = Shell.Current
+                ?? throw new InvalidOperationException(
+                    "Navegação indisponível.");
+
+            await shell.GoToAsync(route);
+        }
+        catch
+        {
+            ErrorMessage =
+                "Não foi possível abrir esta tela agora.";
+        }
+        finally
+        {
+            _isNavigating = false;
+        }
+    }
 }

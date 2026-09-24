@@ -49,6 +49,7 @@ public sealed class AuthSessionService
         catch
         {
             _cached = null;
+            TryRemoveUnsafe();
             return null;
         }
         finally
@@ -121,7 +122,7 @@ public sealed class AuthSessionService
         }
         catch
         {
-            // A sessão expirada continua sendo rejeitada em memória.
+            // Sessão inválida continua sendo rejeitada em memória.
         }
     }
 }

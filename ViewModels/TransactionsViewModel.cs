@@ -15,10 +15,12 @@ public partial class TransactionsViewModel(
     [ObservableProperty] private decimal totalRevenue;
     [ObservableProperty] private decimal totalExpenses;
     [ObservableProperty] private decimal balance;
+    [ObservableProperty] private bool isBalanceNegative;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string errorMessage = string.Empty;
 
     private bool _deletePromptOpen;
+    private bool _isNavigating;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -81,17 +83,49 @@ public partial class TransactionsViewModel(
 
         Balance =
             TotalRevenue - TotalExpenses;
+
+        IsBalanceNegative =
+            Balance < 0;
     }
 
     [RelayCommand]
     private Task NewRevenueAsync()
-        => Shell.Current.GoToAsync(
-            $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Revenue)}");
+        => NavigateToFormAsync(
+            TransactionTypes.Revenue);
 
     [RelayCommand]
     private Task NewExpenseAsync()
-        => Shell.Current.GoToAsync(
-            $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(TransactionTypes.Expense)}");
+        => NavigateToFormAsync(
+            TransactionTypes.Expense);
+
+    private async Task NavigateToFormAsync(
+        string kind)
+    {
+        if (_isNavigating)
+            return;
+
+        _isNavigating = true;
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            var shell =
+                Shell.Current
+                ?? throw new InvalidOperationException();
+
+            await shell.GoToAsync(
+                $"{nameof(TransactionFormPage)}?kind={Uri.EscapeDataString(kind)}");
+        }
+        catch
+        {
+            ErrorMessage =
+                "Não foi possível abrir o lançamento agora.";
+        }
+        finally
+        {
+            _isNavigating = false;
+        }
+    }
 
     [RelayCommand]
     private async Task DeleteAsync(

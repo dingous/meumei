@@ -101,6 +101,7 @@ public sealed class MeiRulesService
             < 70m => "Dentro do limite",
             < 90m => "Atenção ao ritmo de faturamento",
             < 100m => "Próximo do limite anual",
+            100m => "No limite anual",
             _ => "Acima do limite informado"
         };
 }
